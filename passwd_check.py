@@ -20,13 +20,14 @@ LOG = logging.getLogger(__name__)
 class PasswordCheck:
 
 	# program version :-)
-	__version__ = "1.1"
+	__version__ = "1.2"
 
 	host = "localhost"
 	port = 22
 	connections = 0
 	credentials_file = None
 	credentials = []
+	user = None
 
 	# initialize the passwort test
 	def __init__(self, credentials = "credentials.txt", hostname = "localhost", port = 22):
@@ -57,6 +58,7 @@ class PasswordCheck:
 		parser.add_argument('-h', '--host', action='store', dest='host', help='host/ip to connect', required=True)
 		parser.add_argument('-p', '--port', action='store', dest='port', help='port to connect (default: %(default)s)', default="22", type=int)
 		parser.add_argument('-q', '--quiet', action='store_true', dest='quiet', help='do not print anything to stdout', default=False)
+		parser.add_argument('-u', '--user', action='store', dest='username', help='specify username to connect with (username will not be parsed from input file)', default=None)
 		parser.add_argument('-v', '--verbose', action='count', dest='verbosity', help='verbosity (WARNING: when using -vv or greater logging output will contain passwords!)', default=0)
 		parser.add_argument('--version', action='version', version=epilog)
 
@@ -66,6 +68,7 @@ class PasswordCheck:
 		self.host = results.host
 		self.port = results.port
 		self.credentials_file = results.file
+		self.user = results.username
 
 		# if quiet is set, set log level to highest level
 		if results.quiet:
@@ -166,7 +169,17 @@ class PasswordCheck:
 			# split up each line in username and password
 			if cred.strip():
 				try:
-					user, passwd = cred.split(':', 1)
+					if not self.user:
+						# if no default user has been set (using -u/--username)
+						# the user name will be parsed from the current line of
+						# the credentials file
+						user, passwd = cred.split(':', 1)
+					else:
+						# if a default user has been set
+						# the complete line from the credentials file will be
+						# treated as password
+						user = self.user
+						passwd = cred
 					if user.strip() and passwd.strip():
 						# continue only if user and password are not empty
 						LOG.debug("Testing %s:%s" % (user, passwd))
