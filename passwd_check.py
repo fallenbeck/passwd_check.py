@@ -56,7 +56,7 @@ class PasswordCheck:
 		parser.add_argument('-h', '--host', action='store', dest='host', help='host/ip to connect', required=True)
 		parser.add_argument('-p', '--port', action='store', dest='port', help='port to connect (default: %(default)s)', default="22", type=int)
 		parser.add_argument('-q', '--quiet', action='store_true', dest='quiet', help='do not print anything to stdout', default=False)
-		parser.add_argument('-v', '--version', action='count', dest='verbosity', help='verbosity (when using -vv logging information will contain passwords!)', default=0)
+		parser.add_argument('-v', '--verbose', action='count', dest='verbosity', help='verbosity (when using -vv logging information will contain passwords!)', default=0)
 		parser.add_argument('--version', action='version', version='%(prog)s {}'.format(PasswordCheck.__version__))
 
 		results = parser.parse_args()

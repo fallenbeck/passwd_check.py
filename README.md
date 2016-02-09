@@ -41,7 +41,7 @@ optional arguments:
   -h HOST, --host HOST  host/ip to connect
   -p PORT, --port PORT  port to connect (default: 22)
   -q, --quiet           do not print anything to stdout
-  -v                    verbosity (when using -vv logging information will
+  -v, --verbose         verbosity (when using -vv logging information will
                         contain passwords!)
   --version             show program's version number and exit
 ```
