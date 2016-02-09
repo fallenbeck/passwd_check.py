@@ -7,12 +7,14 @@ The file contains a list of credentials to check, one set ot username and passwo
 ## Motivation
 This script was written to perform regular checks if users have changed the default passwords at their virtual machines provided by the Leibniz-Rechenzentrum (LRZ).
 
+In our scenario we are not looking into the customers' VMs but check the passwords from outside using SSH connections.
+
 ## Requirements
 This software was tested with Python 2.7.11 and Python 3.5.1.
 
 You need to install the following package using `pip`:
 
-* paramiko
+* paramiko (tested with version 1.16.0)
 
 I strongly recommend using a `virtualenv` to set up an environment to execute this script. Go for Python 3 if possible. (To install a Python 2.x environment use ```-p python``` instead of ```-p python3``` when creating the virtual environment.)
 
