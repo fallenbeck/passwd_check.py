@@ -1,14 +1,32 @@
 # passwd_check.py
 
-Script to check if SSH connections can be established to given host:port
-using credentials specified in a file.
+Script to check if SSH connections can be established to given host:port using credentials specified in a file.
 
-The file contains a list of credentials to check, one set ot username and
-password per line seperated by colons.
+The file contains a list of credentials to check, one set ot username and password per line seperated by colons.
 
 ## Motivation
-This script was written to perform regular checks if users have changed the
-default passwords at their virtual machines provided by the Leibniz-Rechenzentrum (LRZ).
+This script was written to perform regular checks if users have changed the default passwords at their virtual machines provided by the Leibniz-Rechenzentrum (LRZ).
+
+## Usage
+```
+usage: passwd_check.py [--help] -f FILE -h HOST [-p PORT] [-q] [-v]
+
+This is a program to test if SSH connections can be established using a list
+of different credentials. If a(t least one) connection could be established by
+the software the exit code of this program will be 1, if no connection could
+be established it will return with exit code 0. This program is used for
+testing if cloud users have changed the default passwords of user accounts
+existing in VM images created by the Cloud provider.
+
+optional arguments:
+  --help                show this help message and exit
+  -f FILE, --file FILE  specify file containing the credentials (default:
+                        credentials.txt)
+  -h HOST, --host HOST  host/ip to connect
+  -p PORT, --port PORT  port to connect (default: 22)
+  -q, --quiet           do not print anything to stdout
+  -v, --version         show program's version number and exit
+```
 
 ## Contact
 If you have any questions feel free to contact me at <niels@lrz.de>
