@@ -11,7 +11,7 @@ import argparse
 
 # use logging
 import logging
-logging.basicConfig(format='%(asctime)s [%(levelname)8s] %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s [%(levelname)5s] %(message)s', level=logging.INFO)
 # by default, paramiko should also generate logging ouput in case of an error
 logging.getLogger("paramiko").setLevel(logging.ERROR)
 LOG = logging.getLogger(__name__)
@@ -26,7 +26,6 @@ class PasswordCheck:
 	connections = 0
 	credentials_file = None
 	credentials = []
-	silent = False
 
 	# initialize the passwort test
 	def __init__(self, credentials = "credentials.txt", hostname = "localhost", port = 22):
@@ -63,23 +62,20 @@ class PasswordCheck:
 		results = parser.parse_args()
 
 		self.host = results.host
-		self.silent = results.quiet
 		self.port = results.port
 		self.credentials_file = results.file
 
 		# if quiet is set, set log level to highest level
-		if self.silent:
+		if results.quiet:
 			LOG.setLevel(logging.CRITICAL)
 		
 		# set log level depending on verbosity
 		# this overrides the silent flag
-		if results.verbosity == 0:
-			LOG.setLevel(logging.ERROR)
-		elif results.verbosity == 1:
+		elif results.verbosity == 0:
 			LOG.setLevel(logging.INFO)
-		elif results.verbosity == 2:
+		elif results.verbosity == 1:
 			LOG.setLevel(logging.DEBUG)
-		elif results.verbosity == 3:
+		elif results.verbosity == 2:
 			LOG.setLevel(logging.DEBUG)
 			# make paramiko more verbose
 			logging.getLogger("paramiko").setLevel(logging.INFO)
@@ -143,7 +139,7 @@ class PasswordCheck:
 		# number of successfully used credentials
 		num = len(successful_credentials)
 
-		LOG.info("Successfully established SSH connections to %s on port %s: %d" % (self.host, self.port, num))
+		LOG.info("Successfully established SSH connections to %s:%s: %d" % (self.host, self.port, num))
 
 		if num:
 			# print out credentials which could be used to connect
