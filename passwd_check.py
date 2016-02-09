@@ -5,6 +5,7 @@
 # written by Niels Fallenbeck <niels@lrz.de>
 
 from sys import exit, argv, version_info
+import os
 import paramiko
 from paramiko.ssh_exception import BadHostKeyException, AuthenticationException, SSHException
 import argparse
@@ -48,7 +49,7 @@ class PasswordCheck:
 		This program is used for testing if cloud users have changed the default passwords of\
 		user accounts existing in VM images created by the Cloud provider."
 
-		epilog = "Versions: Python %d.%d.%d, Paramiko %s" % (version_info[0], version_info[1], version_info[2], paramiko.__version__)
+		epilog = "Versions: %s %s, Python %d.%d.%d, Paramiko %s" % (os.path.basename(argv[0]), PasswordCheck.__version__, version_info[0], version_info[1], version_info[2], paramiko.__version__)
 
 		parser = argparse.ArgumentParser(description=description, epilog=epilog, conflict_handler="resolve")
 
@@ -57,7 +58,7 @@ class PasswordCheck:
 		parser.add_argument('-p', '--port', action='store', dest='port', help='port to connect (default: %(default)s)', default="22", type=int)
 		parser.add_argument('-q', '--quiet', action='store_true', dest='quiet', help='do not print anything to stdout', default=False)
 		parser.add_argument('-v', '--verbose', action='count', dest='verbosity', help='verbosity (when using -vv logging information will contain passwords!)', default=0)
-		parser.add_argument('--version', action='version', version='%(prog)s {}'.format(PasswordCheck.__version__))
+		parser.add_argument('--version', action='version', version='%s %s' % (os.path.basename(argv[0]),PasswordCheck.__version__))
 
 		results = parser.parse_args()
 
