@@ -12,7 +12,7 @@ import argparse
 
 # use logging
 import logging
-logging.basicConfig(format='%(asctime)s [%(levelname)5s] %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s [%(levelname)7s] %(message)s', level=logging.INFO)
 # by default, paramiko should also generate logging ouput in case of an error
 logging.getLogger("paramiko").setLevel(logging.ERROR)
 LOG = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ LOG = logging.getLogger(__name__)
 class PasswordCheck:
 
 	# program version :-)
-	__version__ = "1.0"
+	__version__ = "1.1"
 
 	host = "localhost"
 	port = 22
@@ -164,10 +164,18 @@ class PasswordCheck:
 
 		for cred in credentials:
 			# split up each line in username and password
-			user, passwd = cred.split(':', 1)
-			LOG.debug("Testing %s:%s" % (user, passwd))
-			if self.ssh_connect(user = user, passwd = passwd, host = self.host, port = self.port):
-				successful_credentials.append(cred)
+			if cred.strip():
+				try:
+					user, passwd = cred.split(':', 1)
+					if user.strip() and passwd.strip():
+						# continue only if user and password are not empty
+						LOG.debug("Testing %s:%s" % (user, passwd))
+						if self.ssh_connect(user = user, passwd = passwd, host = self.host, port = self.port):
+							successful_credentials.append(cred)
+					else:
+						LOG.warning("Empty user or password string in line: %s" % (cred))
+				except Exception as e:
+					LOG.error("Error while parsing line: %s" % (cred))
 
 		LOG.debug("Successful connections: %d" % (len(successful_credentials)))
 		return successful_credentials
