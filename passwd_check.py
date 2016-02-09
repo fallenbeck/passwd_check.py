@@ -20,7 +20,7 @@ LOG = logging.getLogger(__name__)
 class PasswordCheck:
 
 	# program version :-)
-	__version__ = "0.3"
+	__version__ = "1.0"
 
 	host = "localhost"
 	port = 22
