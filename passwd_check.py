@@ -9,9 +9,17 @@ import paramiko
 from paramiko.ssh_exception import BadHostKeyException, AuthenticationException, SSHException
 import argparse
 
+# use logging
+import logging
+logging.basicConfig(format='%(asctime)s [%(levelname)8s] %(message)s', level=logging.INFO)
+# by default, paramiko should also generate logging ouput in case of an error
+logging.getLogger("paramiko").setLevel(logging.ERROR)
+LOG = logging.getLogger(__name__)
+
 class PasswordCheck:
 
-	__version__ = "0.2"
+	# program version :-)
+	__version__ = "0.3"
 
 	host = "localhost"
 	port = 22
@@ -49,8 +57,8 @@ class PasswordCheck:
 		parser.add_argument('-h', '--host', action='store', dest='host', help='host/ip to connect', required=True)
 		parser.add_argument('-p', '--port', action='store', dest='port', help='port to connect (default: %(default)s)', default="22", type=int)
 		parser.add_argument('-q', '--quiet', action='store_true', dest='quiet', help='do not print anything to stdout', default=False)
-
-		parser.add_argument('-v', '--version', action='version', version='%(prog)s {}'.format(PasswordCheck.__version__))
+		parser.add_argument('-v', '--version', action='count', dest='verbosity', help='verbosity (when using -vv logging information will contain passwords!)', default=0)
+		parser.add_argument('--version', action='version', version='%(prog)s {}'.format(PasswordCheck.__version__))
 
 		results = parser.parse_args()
 
@@ -58,6 +66,35 @@ class PasswordCheck:
 		self.silent = results.quiet
 		self.port = results.port
 		self.credentials_file = results.file
+
+		# if quiet is set, set log level to highest level
+		if self.silent:
+			LOG.setLevel(logging.CRITICAL)
+		
+		# set log level depending on verbosity
+		# this overrides the silent flag
+		if results.verbosity == 0:
+			LOG.setLevel(logging.ERROR)
+		elif results.verbosity == 1:
+			LOG.setLevel(logging.INFO)
+		elif results.verbosity == 2:
+			LOG.setLevel(logging.DEBUG)
+		elif results.verbosity == 3:
+			LOG.setLevel(logging.DEBUG)
+			# make paramiko more verbose
+			logging.getLogger("paramiko").setLevel(logging.INFO)
+		else:
+			LOG.setLevel(logging.DEBUG)
+			# display debug output from paramiko
+			logging.getLogger("paramiko").setLevel(logging.DEBUG)
+
+		if results.verbosity >= 2:
+			LOG.info("Will be very verbose (log messages will contain passwords!)")
+
+		LOG.debug("Set log level to %d" % (results.verbosity))
+		LOG.debug("Successfully parsed command line arguments:\n%s" % (results))
+
+
 
 
 	# read credentials from file and store them locally in self.credentials
@@ -74,6 +111,7 @@ class PasswordCheck:
 			for line in f:
 				l.append(line.strip())
 
+		LOG.debug("Read %d credentials from file %s" % (len(l), filename))
 		return l
 
 
@@ -83,9 +121,7 @@ class PasswordCheck:
 		everything went well or return code of 1 if connections could be
 		established.
 		"""
-		# Display how many tests to run
-		if not self.silent:
-			print("Running %d tests ..." % (len(self.credentials)))
+		LOG.info("Running %d tests ..." % (len(self.credentials)))
 		
 		# run the connection tests and evaluate
 		success = self.evaluate(self.try_to_connect(self.credentials))
@@ -107,12 +143,11 @@ class PasswordCheck:
 		# number of successfully used credentials
 		num = len(successful_credentials)
 
-		if not self.silent:
-			print("Successfully established SSH connections to %s on port %s: %d" % (self.host, self.port, num))
+		LOG.info("Successfully established SSH connections to %s on port %s: %d" % (self.host, self.port, num))
+
 		if num:
 			# print out credentials which could be used to connect
-			if not self.silent:
-				print(successful_credentials)
+			LOG.info(successful_credentials)
 			return False
 		else:
 			return True
@@ -125,15 +160,18 @@ class PasswordCheck:
 
 		crecentials -- list of credentials to use
 		"""
+		LOG.debug("Trying list of %d credentials to establish SSH connection" % (len(credentials)))
 		# Keep track of successfully used credentials
 		successful_credentials = []
 
 		for cred in credentials:
 			# split up each line in username and password
 			user, passwd = cred.split(':', 1)
+			LOG.debug("Testing %s:%s" % (user, passwd))
 			if self.ssh_connect(user = user, passwd = passwd, host = self.host, port = self.port):
 				successful_credentials.append(cred)
 
+		LOG.debug("Successful connections: %d" % (len(successful_credentials)))
 		return successful_credentials
 
 
@@ -146,6 +184,7 @@ class PasswordCheck:
 		host -- host to connect to
 		port -- port to connect to
 		"""
+		LOG.debug("Trying to connect %s:%s@%s:%d ..." % (user, passwd, host, port))
 		# Create paramiko ssh client
 		ssh = paramiko.SSHClient()
 		# Accept unknown host keys
@@ -172,11 +211,13 @@ class PasswordCheck:
 				banner_timeout = 0
 			)
 		except Exception as e:
+			LOG.debug("Could not establish connection")
 			return False
 
 		# Connection could be established.
 		# Close the SSH connection in any case to prevent program hangs
 		ssh.close()
+		LOG.debug("Connection successfully established")
 		return True
 
 
