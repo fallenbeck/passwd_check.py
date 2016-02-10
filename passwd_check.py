@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Used to check if cloud users have changed the passwords of the system
 # accounts existing in the VM images provided by the Cloud provider.
-# 
+#
 # written by Niels Fallenbeck <niels@lrz.de>
 
 from sys import exit, argv, version_info
@@ -73,7 +73,7 @@ class PasswordCheck:
 		# if quiet is set, set log level to highest level
 		if results.quiet:
 			LOG.setLevel(logging.CRITICAL)
-		
+
 		# set log level depending on verbosity
 		# this overrides the silent flag
 		elif results.verbosity == 0:
@@ -92,10 +92,8 @@ class PasswordCheck:
 		if results.verbosity >= 2:
 			LOG.info("Will be very verbose (log messages will contain passwords!)")
 
-		LOG.debug("Set log level to %d" % (results.verbosity))
+		LOG.debug("Log levels are %s: %s, paramiko: %s" % (os.path.basename(argv[0]), logging.getLevelName(LOG.level), logging.getLevelName(logging.getLogger("paramiko").level)))
 		LOG.debug("Successfully parsed command line arguments:\n%s" % (results))
-
-
 
 
 	# read credentials from file and store them locally in self.credentials
@@ -103,7 +101,7 @@ class PasswordCheck:
 		"""Read credentials from file and store them in a local list.
 		The file has one set of credentials containing username and password
 		per line seperated by a colon, e.g. user:passwd
-	
+
 		filename -- Name of file which holds the crecentials
 		"""
 		l = []
@@ -123,7 +121,7 @@ class PasswordCheck:
 		established.
 		"""
 		LOG.info("Running %d tests ..." % (len(self.credentials)))
-		
+
 		# run the connection tests and evaluate
 		success = self.evaluate(self.try_to_connect(self.credentials))
 
