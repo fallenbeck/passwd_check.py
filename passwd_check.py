@@ -62,7 +62,12 @@ class PasswordCheck:
 		parser.add_argument('-v', '--verbose', action='count', dest='verbosity', help='verbosity (WARNING: when using -vv or greater logging output will contain passwords!)', default=0)
 		parser.add_argument('--version', action='version', version=epilog)
 
-		results = parser.parse_args()
+		# if an error occurs the help will be displayed automatically
+		try:
+			results = parser.parse_args()
+		except:
+			parser.print_help()
+			exit(0)
 
 		# set the values read from the argument parser
 		self.host = results.host
