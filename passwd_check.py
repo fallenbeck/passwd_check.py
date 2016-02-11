@@ -50,7 +50,7 @@ class PasswordCheck:
 		This program is used for testing if cloud users have changed the default passwords of\
 		user accounts existing in VM images created by the Cloud provider."
 
-		epilog = "%s %s, Python %d.%d.%d, Paramiko %s" % (os.path.basename(argv[0]), PasswordCheck.__version__, version_info[0], version_info[1], version_info[2], paramiko.__version__)
+		epilog = "%s %s, Python %d.%d.%d, Paramiko %s" % (__class__.__name__, PasswordCheck.__version__, version_info[0], version_info[1], version_info[2], paramiko.__version__)
 
 		parser = argparse.ArgumentParser(description=description, epilog="Versions: %s" % epilog, conflict_handler="resolve")
 
