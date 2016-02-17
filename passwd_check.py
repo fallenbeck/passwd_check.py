@@ -151,7 +151,7 @@ class PasswordCheck:
 
 		if num:
 			# print out credentials which could be used to connect
-			LOG.info(successful_credentials)
+			LOG.warning("Connection established to %s using %s" % (self.host, ",".join(successful_credentials)))
 			return False
 		else:
 			return True
@@ -187,7 +187,7 @@ class PasswordCheck:
 						# continue only if user and password are not empty
 						LOG.debug("Testing %s:%s" % (user, passwd))
 						if self.ssh_connect(user = user, passwd = passwd, host = self.host, port = self.port):
-							successful_credentials.append(cred)
+							successful_credentials.append("%s:%s" % (user, passwd))
 					else:
 						LOG.warning("Empty user or password string in line: %s" % (cred))
 				except Exception as e:
