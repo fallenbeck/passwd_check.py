@@ -12,17 +12,19 @@ import argparse
 
 # use logging
 import logging
-logging.basicConfig(format='%(asctime)s [%(levelname)7s] %(message)s', level=logging.WARN)
+log_formatter = logging.Formatter('%(asctime)s [%(levelname)7s] %(message)s')
+LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.ERROR)
+
 # by default, paramiko should also generate logging ouput in case of a
 # critical error. in short, we do not want to see anything from paramiko
 # by default. :)
 logging.getLogger("paramiko").setLevel(logging.CRITICAL)
-LOG = logging.getLogger(__name__)
 
 class PasswordCheck:
 
 	# program version :-)
-	__version__ = "1.3"
+	__version__ = "1.4"
 
 	host = "localhost"
 	port = 22
@@ -34,6 +36,11 @@ class PasswordCheck:
 	# initialize the passwort test
 	def __init__(self, credentials = "credentials.txt", hostname = "localhost", port = 22):
 		"""Initialize the PasswortTest."""
+		# Set up logging
+		stdout = logging.StreamHandler()
+		stdout.setFormatter(log_formatter)
+		LOG.addHandler(stdout)
+
 		# Read command line arguments
 		self.parse_args()
 
@@ -58,6 +65,7 @@ class PasswordCheck:
 
 		parser.add_argument('-f', '--file', action='store', dest='file', help='specify file containing the credentials (default: credentials.txt)', required=True)
 		parser.add_argument('-h', '--host', action='store', dest='host', help='host/ip to connect', required=True)
+		parser.add_argument('-l', '--logfile', action='store', dest='logfile', help='append output also to a logfile', required=False)
 		parser.add_argument('-p', '--port', action='store', dest='port', help='port to connect (default: %(default)s)', default="22", type=int)
 		parser.add_argument('-q', '--quiet', action='store_true', dest='quiet', help='do not print anything to stdout', default=False)
 		parser.add_argument('-u', '--user', action='store', dest='user', help='specify username to connect with (username will not be parsed from input file)', default=None)
@@ -97,6 +105,13 @@ class PasswordCheck:
 		else:
 			LOG.setLevel(logging.DEBUG)
 			logging.getLogger("paramiko").setLevel(logging.DEBUG)
+
+		# if a logfile has been specified change the basicConfig
+		# to additionally print everything to that file
+		if results.logfile is not None:
+			fh = logging.FileHandler(results.logfile)
+			fh.setFormatter(log_formatter)
+			LOG.addHandler(fh)
 
 		if results.verbosity >= 2:
 			LOG.info("Will be very verbose (log messages will contain passwords!)")

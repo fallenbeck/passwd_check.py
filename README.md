@@ -26,8 +26,8 @@ pip install paramiko
 
 ## Usage
 ```
-usage: passwd_check.py [--help] -f FILE -h HOST [-p PORT] [-q] [-u USER] [-v]
-                       [--version]
+usage: passwd_check.py [--help] -f FILE -h HOST [-l LOGFILE] [-p PORT] [-q]
+                       [-u USER] [-v] [--version]
 
 This is a program to test if SSH connections can be established using a list
 of different credentials. If a(t least one) connection could be established by
@@ -41,6 +41,8 @@ optional arguments:
   -f FILE, --file FILE  specify file containing the credentials (default:
                         credentials.txt)
   -h HOST, --host HOST  host/ip to connect
+  -l LOGFILE, --logfile LOGFILE
+                        append output also to a logfile
   -p PORT, --port PORT  port to connect (default: 22)
   -q, --quiet           do not print anything to stdout
   -u USER, --user USER  specify username to connect with (username will not be
