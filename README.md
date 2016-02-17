@@ -45,7 +45,7 @@ optional arguments:
   -q, --quiet           do not print anything to stdout
   -u USER, --user USER  specify username to connect with (username will not be
                         parsed from input file)
-  -v, --verbose         verbosity (WARNING: when using -vv or greater logging
+  -v, --verbose         verbosity (WARNING: when using -vvv or greater logging
                         output will contain passwords!)
   --version             show program's version number and exit
 ```
