@@ -68,8 +68,7 @@ class PasswordCheck:
 		try:
 			results = parser.parse_args()
 		except:
-			parser.print_help()
-			exit(0)
+			exit(1)
 
 		# set the values read from the argument parser
 		self.host = results.host
