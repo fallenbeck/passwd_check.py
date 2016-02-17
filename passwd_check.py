@@ -12,9 +12,11 @@ import argparse
 
 # use logging
 import logging
-logging.basicConfig(format='%(asctime)s [%(levelname)7s] %(message)s', level=logging.INFO)
-# by default, paramiko should also generate logging ouput in case of an error
-logging.getLogger("paramiko").setLevel(logging.ERROR)
+logging.basicConfig(format='%(asctime)s [%(levelname)7s] %(message)s', level=logging.WARN)
+# by default, paramiko should also generate logging ouput in case of a
+# critical error. in short, we do not want to see anything from paramiko
+# by default. :)
+logging.getLogger("paramiko").setLevel(logging.CRITICAL)
 LOG = logging.getLogger(__name__)
 
 class PasswordCheck:
@@ -59,7 +61,7 @@ class PasswordCheck:
 		parser.add_argument('-p', '--port', action='store', dest='port', help='port to connect (default: %(default)s)', default="22", type=int)
 		parser.add_argument('-q', '--quiet', action='store_true', dest='quiet', help='do not print anything to stdout', default=False)
 		parser.add_argument('-u', '--user', action='store', dest='user', help='specify username to connect with (username will not be parsed from input file)', default=None)
-		parser.add_argument('-v', '--verbose', action='count', dest='verbosity', help='verbosity (WARNING: when using -vv or greater logging output will contain passwords!)', default=0)
+		parser.add_argument('-v', '--verbose', action='count', dest='verbosity', help='verbosity (WARNING: when using -vvv or greater logging output will contain passwords!)', default=0)
 		parser.add_argument('--version', action='version', version=epilog)
 
 		# if an error occurs the help will be displayed automatically
@@ -82,16 +84,19 @@ class PasswordCheck:
 		# set log level depending on verbosity
 		# this overrides the silent flag
 		elif results.verbosity == 0:
-			LOG.setLevel(logging.INFO)
+			LOG.setLevel(logging.WARN)
 		elif results.verbosity == 1:
-			LOG.setLevel(logging.DEBUG)
+			LOG.setLevel(logging.INFO)
 		elif results.verbosity == 2:
 			LOG.setLevel(logging.DEBUG)
-			# make paramiko more verbose
+		elif results.verbosity == 3:
+			LOG.setLevel(logging.DEBUG)
+			logging.getLogger("paramiko").setLevel(logging.ERROR)
+		elif results.verbosity == 4:
+			LOG.setLevel(logging.DEBUG)
 			logging.getLogger("paramiko").setLevel(logging.INFO)
 		else:
 			LOG.setLevel(logging.DEBUG)
-			# display debug output from paramiko
 			logging.getLogger("paramiko").setLevel(logging.DEBUG)
 
 		if results.verbosity >= 2:
