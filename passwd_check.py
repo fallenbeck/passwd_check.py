@@ -52,12 +52,7 @@ class PasswordCheck:
 
 	def parse_args(self):
 		"""Parse the command line arguments."""
-		description = "This is a program to test if SSH connections can be established using a\
-		list of	different credentials. If a(t least one) connection could be established by the\
-		software the exit code of this program will be 1, if no connection could be established\
-		it will return with exit code 0.\
-		This program is used for testing if cloud users have changed the default passwords of\
-		user accounts existing in VM images created by the Cloud provider."
+		description = "This is a program to test if SSH connections can be established using a list of	different credentials. If a(t least one) connection could be established by the	software the exit code of this program will be 1, if no connection could be established	it will return with exit code 0. This program is used for testing if cloud users have changed the default passwords of user accounts existing in VM images created by the Cloud provider."
 
 		epilog = "%s %s, Python %d.%d.%d, Paramiko %s" % (__class__.__name__, PasswordCheck.__version__, version_info[0], version_info[1], version_info[2], paramiko.__version__)
 
