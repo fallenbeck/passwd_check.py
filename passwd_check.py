@@ -44,7 +44,7 @@ class PasswordCheck:
 
 	# initialize the passwort test
 	def __init__(self, credentials, hostname, port = 22):
-		"""Initialize the PasswortTest."""
+		"""Initialization and running tests."""
 		# Set up logging
 		stdout = logging.StreamHandler()
 		stdout.setFormatter(log_formatter)
@@ -72,7 +72,7 @@ class PasswordCheck:
 		parser.add_argument('-l', '--logfile', action='store', dest='logfile', help='Append output also to a logfile', required=False)
 		parser.add_argument('-p', '--port', action='store', dest='port', help='Port to connect to (default: %(default)s)', default="22", type=int)
 		parser.add_argument('-q', '--quiet', action='store_true', dest='quiet', help='Do not print anything to stdout', default=False)
-		parser.add_argument('-t', '--threads', action='store', dest='threads', help='Number of threads to use (default is 500)', default=500)
+		parser.add_argument('-t', '--threads', action='store', dest='threads', help='Maximum number of threads to use (default is 500)', default=500)
 		parser.add_argument('-u', '--user', action='store', dest='user', help='Username to connect with (username will not be parsed from input file)', default=None)
 		parser.add_argument('-v', '--verbose', action='count', dest='verbosity', help='Verbosity (WARNING: when using -vvv or greater logging output will contain passwords!)', default=0)
 		parser.add_argument('--version', action='version', version=epilog)
@@ -167,6 +167,12 @@ class PasswordCheck:
 
 		LOG.debug("Read %d credentials from file %s" % (len(self.credentials), filename))
 
+		# if num_credentials == 0 (auto) or greater than the number of
+		# credentials to test set the number of workers to this number
+		if self.num_threads == 0 or self.num_threads > len(self.credentials):
+			self.num_threads = len(self.credentials)
+			LOG.debug("Set maximum number of threads to %d" % (self.num_threads))
+
 
 	# Testing
 	def run_tests(self):
@@ -215,11 +221,6 @@ class PasswordCheck:
 
 		crecentials -- list of credentials to use
 		"""
-		# if num_credentials == 0 (auto) set the number of workers to the
-		# number of credentials to test
-		if self.num_threads == 0:
-			self.num_threads = len(self.credentials)
-
 		LOG.debug("Trying list of %d credentials to establish SSH connection (using %d threads)" % (len(self.credentials), self.num_threads))
 
 		with ThreadPoolExecutor(max_workers=self.num_threads) as e:
@@ -268,16 +269,17 @@ class PasswordCheck:
 				gss_host = None,
 				banner_timeout = 0
 			)
+
+			# Add credentials which could be successfully used to connect
+			self.successful_credentials.append("%s:%s" % (user, passwd))
+			LOG.debug("Connection successfully established using")
+
 		except Exception as e:
 			LOG.debug("Could not establish connection")
-			return False
 
 		# Connection could be established.
 		# Close the SSH connection in any case to prevent program hangs
 		ssh.close()
-		self.successful_credentials.append("%s:%s" % (user, passwd))
-		LOG.debug("Connection successfully established using")
-		return True
 
 
 if __name__ == "__main__":
