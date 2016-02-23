@@ -27,7 +27,7 @@ pip install paramiko
 ## Usage
 ```
 usage: passwd_check.py [--help] -f FILE -h HOST [-l LOGFILE] [-p PORT] [-q]
-                       [-u USER] [-v] [--version]
+                       [-t THREADS] [-u USER] [-v] [--version]
 
 This is a program to test if SSH connections can be established using a list
 of different credentials. If a(t least one) connection could be established by
@@ -38,16 +38,17 @@ existing in VM images created by the Cloud provider.
 
 optional arguments:
   --help                show this help message and exit
-  -f FILE, --file FILE  specify file containing the credentials (default:
-                        credentials.txt)
-  -h HOST, --host HOST  host/ip to connect
+  -f FILE, --file FILE  File containing the credentials
+  -h HOST, --host HOST  Host/IP to connect
   -l LOGFILE, --logfile LOGFILE
-                        append output also to a logfile
-  -p PORT, --port PORT  port to connect (default: 22)
-  -q, --quiet           do not print anything to stdout
-  -u USER, --user USER  specify username to connect with (username will not be
-                        parsed from input file)
-  -v, --verbose         verbosity (WARNING: when using -vvv or greater logging
+                        Append output also to a logfile
+  -p PORT, --port PORT  Port to connect to (default: 22)
+  -q, --quiet           Do not print anything to stdout
+  -t THREADS, --threads THREADS
+                        Number of threads to use (default is 0 (auto))
+  -u USER, --user USER  Username to connect with (username will not be parsed
+                        from input file)
+  -v, --verbose         Verbosity (WARNING: when using -vvv or greater logging
                         output will contain passwords!)
   --version             show program's version number and exit
 ```

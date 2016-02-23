@@ -5,6 +5,7 @@
 # written by Niels Fallenbeck <niels@lrz.de>
 
 from sys import exit, argv, version_info
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import os
 import paramiko
 from paramiko.ssh_exception import BadHostKeyException, AuthenticationException, SSHException
@@ -24,7 +25,7 @@ logging.getLogger("paramiko").setLevel(logging.CRITICAL)
 class PasswordCheck:
 
 	# program version :-)
-	__version__ = "1.4"
+	__version__ = "1.5"
 
 	host = "localhost"
 	port = 22
@@ -33,8 +34,16 @@ class PasswordCheck:
 	credentials = []
 	user = None
 
+	# Number of threads
+	# 0 means auto and will use as many threads as possible
+	num_threads = 0
+
+	# Which credentials were used to connect
+	credentials = []
+	successful_credentials = []
+
 	# initialize the passwort test
-	def __init__(self, credentials = "credentials.txt", hostname = "localhost", port = 22):
+	def __init__(self, credentials, hostname, port = 22):
 		"""Initialize the PasswortTest."""
 		# Set up logging
 		stdout = logging.StreamHandler()
@@ -45,7 +54,7 @@ class PasswordCheck:
 		self.parse_args()
 
 		# Read credentials from file
-		self.credentials = self.read_credentials(self.credentials_file)
+		self.read_credentials(self.credentials_file)
 
 		# Perform tests
 		self.run_tests()
@@ -58,13 +67,14 @@ class PasswordCheck:
 
 		parser = argparse.ArgumentParser(description=description, epilog="Versions: %s" % epilog, conflict_handler="resolve")
 
-		parser.add_argument('-f', '--file', action='store', dest='file', help='specify file containing the credentials (default: credentials.txt)', required=True)
-		parser.add_argument('-h', '--host', action='store', dest='host', help='host/ip to connect', required=True)
-		parser.add_argument('-l', '--logfile', action='store', dest='logfile', help='append output also to a logfile', required=False)
-		parser.add_argument('-p', '--port', action='store', dest='port', help='port to connect (default: %(default)s)', default="22", type=int)
-		parser.add_argument('-q', '--quiet', action='store_true', dest='quiet', help='do not print anything to stdout', default=False)
-		parser.add_argument('-u', '--user', action='store', dest='user', help='specify username to connect with (username will not be parsed from input file)', default=None)
-		parser.add_argument('-v', '--verbose', action='count', dest='verbosity', help='verbosity (WARNING: when using -vvv or greater logging output will contain passwords!)', default=0)
+		parser.add_argument('-f', '--file', action='store', dest='file', help='File containing the credentials', required=True)
+		parser.add_argument('-h', '--host', action='store', dest='host', help='Host/IP to connect', required=True)
+		parser.add_argument('-l', '--logfile', action='store', dest='logfile', help='Append output also to a logfile', required=False)
+		parser.add_argument('-p', '--port', action='store', dest='port', help='Port to connect to (default: %(default)s)', default="22", type=int)
+		parser.add_argument('-q', '--quiet', action='store_true', dest='quiet', help='Do not print anything to stdout', default=False)
+		parser.add_argument('-t', '--threads', action='store', dest='threads', help='Number of threads to use (default is 0 (auto))', default=0)
+		parser.add_argument('-u', '--user', action='store', dest='user', help='Username to connect with (username will not be parsed from input file)', default=None)
+		parser.add_argument('-v', '--verbose', action='count', dest='verbosity', help='Verbosity (WARNING: when using -vvv or greater logging output will contain passwords!)', default=0)
 		parser.add_argument('--version', action='version', version=epilog)
 
 		# if an error occurs the help will be displayed automatically
@@ -78,6 +88,7 @@ class PasswordCheck:
 		self.port = results.port
 		self.credentials_file = results.file
 		self.user = results.user
+		self.num_threads = int(results.threads)
 
 		# if quiet is set, set log level to highest level
 		if results.quiet:
@@ -123,14 +134,38 @@ class PasswordCheck:
 
 		filename -- Name of file which holds the crecentials
 		"""
-		l = []
-
 		with open(filename) as f:
 			for line in f:
-				l.append(line.strip())
+				try:
+					# strip line breaks and stuff
+					line = line.strip()
 
-		LOG.debug("Read %d credentials from file %s" % (len(l), filename))
-		return l
+					# process the data read
+					if not self.user:
+						# if no default user has been set (using -u/--username)
+						# the user name will be parsed from the current line of
+						# the credentials file
+						user, passwd = line.split(':', 1)
+					else:
+						# if a default user has been set
+						# the complete line from the credentials file will be
+						# treated as password
+						user = self.user
+						passwd = line
+
+					# perform a sanity check and store it to the global
+					# credentials[]
+					if user.strip() and passwd.strip():
+						# continue only if user and password are not empty
+						LOG.debug("Adding %s:%s" % (user, passwd))
+						self.credentials.append("%s:%s" % (user, passwd))
+					else:
+						LOG.warning("Empty user or password string in line: %s" % (line))
+
+				except Exception as e:
+					LOG.error("Error while parsing line: %s" % (line))
+
+		LOG.debug("Read %d credentials from file %s" % (len(self.credentials), filename))
 
 
 	# Testing
@@ -139,19 +174,21 @@ class PasswordCheck:
 		everything went well or return code of 1 if connections could be
 		established.
 		"""
-		LOG.info("Running %d tests ..." % (len(self.credentials)))
+		# LOG.info("Running %d tests (using %d threads)..." % (len(self.credentials), self.num_threads))
+		LOG.info("Running %d tests..." % (len(self.credentials)))
 
 		# run the connection tests and evaluate
-		success = self.evaluate(self.try_to_connect(self.credentials))
+		# using a certain number of threads
+		self.try_to_connect()
 
 		# exit the program with a particular exit code
-		if success:
+		if self.evaluate:
 			exit(0)
 		else:
 			exit(1)
 
 
-	def evaluate(self, successful_credentials):
+	def evaluate(self):
 		"""Awaits a list of credentials which were used to successfully
 		estblish an SSH connection. Evaluation will be made depending on
 		the contents of this list.
@@ -159,7 +196,7 @@ class PasswordCheck:
 		successful_credentials -- list of credentials
 		"""
 		# number of successfully used credentials
-		num = len(successful_credentials)
+		num = len(self.successful_credentials)
 
 		LOG.info("Successfully established SSH connections to %s:%s: %d" % (self.host, self.port, num))
 
@@ -172,43 +209,28 @@ class PasswordCheck:
 
 
 	# iterate the credentials and try to establish SSH connections
-	def try_to_connect(self, credentials):
+	def try_to_connect(self):
 		"""Use the credentials and try to establish SSH connections to
 		the host.
 
 		crecentials -- list of credentials to use
 		"""
-		LOG.debug("Trying list of %d credentials to establish SSH connection" % (len(credentials)))
-		# Keep track of successfully used credentials
-		successful_credentials = []
+		# if num_credentials == 0 (auto) set the number of workers to the
+		# number of credentials to test
+		if self.num_threads == 0:
+			self.num_threads = len(self.credentials)
 
-		for cred in credentials:
-			# split up each line in username and password
-			if cred.strip():
-				try:
-					if not self.user:
-						# if no default user has been set (using -u/--username)
-						# the user name will be parsed from the current line of
-						# the credentials file
-						user, passwd = cred.split(':', 1)
-					else:
-						# if a default user has been set
-						# the complete line from the credentials file will be
-						# treated as password
-						user = self.user
-						passwd = cred
-					if user.strip() and passwd.strip():
-						# continue only if user and password are not empty
-						LOG.debug("Testing %s:%s" % (user, passwd))
-						if self.ssh_connect(user = user, passwd = passwd, host = self.host, port = self.port):
-							successful_credentials.append("%s:%s" % (user, passwd))
-					else:
-						LOG.warning("Empty user or password string in line: %s" % (cred))
-				except Exception as e:
-					LOG.error("Error while parsing line: %s" % (cred))
+		LOG.debug("Trying list of %d credentials to establish SSH connection (using %d threads)" % (len(self.credentials), self.num_threads))
 
-		LOG.debug("Successful connections: %d" % (len(successful_credentials)))
-		return successful_credentials
+		with ThreadPoolExecutor(max_workers=self.num_threads) as e:
+			for cred in self.credentials:
+				# split up each line in username and password
+				user, passwd = cred.strip().split(':', 1)
+
+				# submit the job to the ThreadPoolExecutor
+				e.submit(self.ssh_connect, user, passwd, self.host, self.port)
+
+		LOG.debug("Successful connections: %d" % (len(self.successful_credentials)))
 
 
 	def ssh_connect(self, user, passwd, host = "localhost", port = 22):
@@ -253,9 +275,10 @@ class PasswordCheck:
 		# Connection could be established.
 		# Close the SSH connection in any case to prevent program hangs
 		ssh.close()
-		LOG.debug("Connection successfully established")
+		self.successful_credentials.append("%s:%s" % (user, passwd))
+		LOG.debug("Connection successfully established using")
 		return True
 
 
 if __name__ == "__main__":
-	test = PasswordCheck()
+	test = PasswordCheck(credentials = "credentials.txt", hostname = "localhost")
