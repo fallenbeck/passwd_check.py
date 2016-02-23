@@ -45,7 +45,7 @@ optional arguments:
   -p PORT, --port PORT  Port to connect to (default: 22)
   -q, --quiet           Do not print anything to stdout
   -t THREADS, --threads THREADS
-                        Number of threads to use (default is 0 (auto))
+                        Number of threads to use (default is 500)
   -u USER, --user USER  Username to connect with (username will not be parsed
                         from input file)
   -v, --verbose         Verbosity (WARNING: when using -vvv or greater logging

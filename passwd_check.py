@@ -35,8 +35,8 @@ class PasswordCheck:
 	user = None
 
 	# Number of threads
-	# 0 means auto and will use as many threads as possible
-	num_threads = 0
+	# 0 means auto and will use 500 threads
+	num_threads = 500
 
 	# Which credentials were used to connect
 	credentials = []
@@ -72,7 +72,7 @@ class PasswordCheck:
 		parser.add_argument('-l', '--logfile', action='store', dest='logfile', help='Append output also to a logfile', required=False)
 		parser.add_argument('-p', '--port', action='store', dest='port', help='Port to connect to (default: %(default)s)', default="22", type=int)
 		parser.add_argument('-q', '--quiet', action='store_true', dest='quiet', help='Do not print anything to stdout', default=False)
-		parser.add_argument('-t', '--threads', action='store', dest='threads', help='Number of threads to use (default is 0 (auto))', default=0)
+		parser.add_argument('-t', '--threads', action='store', dest='threads', help='Number of threads to use (default is 500)', default=500)
 		parser.add_argument('-u', '--user', action='store', dest='user', help='Username to connect with (username will not be parsed from input file)', default=None)
 		parser.add_argument('-v', '--verbose', action='count', dest='verbosity', help='Verbosity (WARNING: when using -vvv or greater logging output will contain passwords!)', default=0)
 		parser.add_argument('--version', action='version', version=epilog)
