@@ -44,7 +44,7 @@ pip install paramiko
 ```
 usage: passwd_check.py [--help] (-h HOST | -hf HOSTFILE)
                        (-u USER | -uf USERFILE) (-p PASSWD | -pf PASSWDFILE)
-                       [-l LOGFILE] [-q] [-t MAX_THREADS] [-v] [--version]
+                       [-v | -q] [-l LOGFILE] [-t MAX_THREADS] [--version]
 
 This is a program to test if SSH connections can be established using a list
 of different credentials. If a(t least one) connection could be established by
@@ -69,12 +69,12 @@ optional arguments:
                         Password to test
   -pf PASSWDFILE, --passwdfile PASSWDFILE
                         File containing a list of passwords
+  -v, --verbose         Set verbosity (the more v's the more verbose)
+  -q, --quiet           Do not print anything to stdout
   -l LOGFILE, --logfile LOGFILE
                         Append output also to a logfile
-  -q, --quiet           Do not print anything to stdout
   -t MAX_THREADS, --threads MAX_THREADS
                         Maximum number of threads to use (default is 500)
-  -v, --verbose         Set Verbosity (WARNING: output may contain passwords)
   --version             show program's version number and exit
 ```
 
@@ -121,22 +121,19 @@ If you specify a maximum number of threads to use with ```-t```/```--threads``` 
 
 
 ### Verbosity
-If you want to see more information during the test runs you can set the level of verbosity by using ```-v```, ```-vv```, ```-vvv```, or ```-vvvv```. If you want to see nothing during the tests, you can switch into a quiet mode by using ```-q```/```--quiet```.
+If you want to see more information during the test runs you can set the level of verbosity by using ```-v```, ```-vv```, ```-vvv```, ```-vvvv```, or ```-vvvvv```. If you want to see nothing during the tests, you can switch into a quiet mode by using ```-q```/```--quiet```.
 
-**Option**             | **PasswordCheck Log Level**  | **Paramiko Log Level**
-:--------------------- | :--------------------------- | :---------------------
-```-q```/```--quiet``` | CRITICAL                      | CRITICAL |
-                       | WARN                          | CRITICAL |
-```-v```               | INFO                          | CRITICAL |
-```-vv```              | DEBUG                         | CRITICAL |
-```-vvv```             | DEBUG                         | ERROR    |
-```-vvvv```            | DEBUG                         | INFO     |
-```-vvvvv```           | DEBUG                         | DEBUG    |
+| **Option**             | **PasswordCheck Log Level**  | **Paramiko Log Level** |
+| :--------------------- | :--------------------------- | :--------------------- |
+| ```-q```/```--quiet``` | CRITICAL                     | CRITICAL |
+|                        | WARN                         | CRITICAL |
+| ```-v```               | INFO                         | CRITICAL |
+| ```-vv```              | DEBUG                        | CRITICAL |
+| ```-vvv```             | DEBUG                        | ERROR    |
+| ```-vvvv```            | DEBUG                        | INFO     |
+| ```-vvvvv```           | DEBUG                        | DEBUG    |
 
-If you specify both the ```-q```/```--quiet``` option and one of the ```-v``` options, the quiet-Option will be overridden.
-
-
-
+You cannot specify ```-q```/```--quiet``` and ```-v``` at the same time.
 
 ## Contact
-If you have any questions feel free to contact me at <niels@lrz.de>
+If you have any questions feel free to contact me at <niels@lrz.de>.
