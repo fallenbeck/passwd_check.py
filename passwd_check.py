@@ -169,14 +169,19 @@ class PasswordCheck:
 	def _read_list_from_file(self, filename):
 		LOG.debug("Read file %s" % (filename))
 		l = []
-		with open(filename) as f:
-			for line in f:
-				# remove e.g. newlines
-				line = line.strip()
+		try:
+			with open(filename) as f:
+				for line in f:
+					# remove e.g. newlines
+					line = line.strip()
 
-				# if line is not empty add it to the list
-				if line:
-					l.append(line)
+					# if line is not empty add it to the list
+					if line:
+						l.append(line)
+
+		except IOError:
+			LOG.error("Could not open file %s" % (filename))
+			exit(255)
 
 		LOG.debug("Read %d lines" % (len(l)))
 
