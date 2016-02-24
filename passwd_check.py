@@ -86,11 +86,14 @@ class PasswordCheck:
 		passgroup.add_argument('-p', '--passwd', action='store', dest='passwd', help='Password to test', default=None)
 		passgroup.add_argument('-pf', '--passwdfile', action='store', dest='passwdfile', help='File containing a list of passwords', default=None)
 
+		# Users are not allowed to used -q and -v at the same time
+		verbositygroup = parser.add_mutually_exclusive_group(required=False)
+		verbositygroup.add_argument('-v', '--verbose', action='count', dest='verbosity', help='Set verbosity (the more v\'s the more verbose)', default=0)
+		verbositygroup.add_argument('-q', '--quiet', action='store_true', dest='quiet', help='Do not print anything to stdout')
+
 		# Other options
 		parser.add_argument('-l', '--logfile', action='store', dest='logfile', help='Append output also to a logfile')
-		parser.add_argument('-q', '--quiet', action='store_true', dest='quiet', help='Do not print anything to stdout')
 		parser.add_argument('-t', '--threads', action='store', dest='max_threads', help='Maximum number of threads to use (default is %(default)s)', default=500)
-		parser.add_argument('-v', '--verbose', action='count', dest='verbosity', help='Set Verbosity (WARNING: output may contain passwords)', default=0)
 		parser.add_argument('--version', action='version', version=epilog)
 
 		# if an error occurs the help will be displayed automatically
