@@ -25,22 +25,22 @@ logging.getLogger("paramiko").setLevel(logging.CRITICAL)
 class PasswordCheck:
 
 	# program version :-)
-	__version__ = "1.5"
+	__version__ = "1.6"
 
-	host = "localhost"
 	port = 22
 	connections = 0
-	credentials_file = None
-	credentials = []
-	user = None
 
-	# Number of threads
-	# 0 means auto and will use 500 threads
-	num_threads = 500
+	# Data used for the tests
+	users = []
+	passwords = []
+	hosts = []
 
 	# Which credentials were used to connect
-	credentials = []
 	successful_credentials = []
+
+	# Number of threads to use for connectiont tests
+	num_threads = 500
+
 
 	# initialize the passwort test
 	def __init__(self, credentials, hostname, port = 22):
@@ -54,27 +54,43 @@ class PasswordCheck:
 		self.parse_args()
 
 		# Read credentials from file
-		self.read_credentials(self.credentials_file)
+		# self.read_credentials(self.credentials_file)
 
 		# Perform tests
 		self.run_tests()
 
+
 	def parse_args(self):
 		"""Parse the command line arguments."""
-		description = "This is a program to test if SSH connections can be established using a list of	different credentials. If a(t least one) connection could be established by the	software the exit code of this program will be 1, if no connection could be established	it will return with exit code 0. This program is used for testing if cloud users have changed the default passwords of user accounts existing in VM images created by the Cloud provider."
+		description = "This is a program to test if SSH connections can be established using a list of	different credentials. If a(t least one) connection could be established by the	software the exit code of this program will be 1, if no connection could be established	it will return with exit code 0. This program is used for testing if cloud users have changed the default passwords of user accounts existing in VM images created by the Cloud provider. When specifying a password file and a username file each username will be tested with every password. These tests will be performed on every host! This may result in a potentially large number of tests (# usernames x # passwords x # hosts). Be aware of that."
 
 		epilog = "%s %s, Python %d.%d.%d, Paramiko %s" % (__class__.__name__, PasswordCheck.__version__, version_info[0], version_info[1], version_info[2], paramiko.__version__)
 
+		# Use a conflict handler so we can reuse the -v switch for verbosity
+		# (it is usally used to display the help page)
 		parser = argparse.ArgumentParser(description=description, epilog="Versions: %s" % epilog, conflict_handler="resolve")
 
-		parser.add_argument('-f', '--file', action='store', dest='file', help='File containing the credentials', required=True)
-		parser.add_argument('-h', '--host', action='store', dest='host', help='Host/IP to connect', required=True)
-		parser.add_argument('-l', '--logfile', action='store', dest='logfile', help='Append output also to a logfile', required=False)
-		parser.add_argument('-p', '--port', action='store', dest='port', help='Port to connect to (default: %(default)s)', default="22", type=int)
-		parser.add_argument('-q', '--quiet', action='store_true', dest='quiet', help='Do not print anything to stdout', default=False)
-		parser.add_argument('-t', '--threads', action='store', dest='threads', help='Maximum number of threads to use (default is 500)', default=500)
-		parser.add_argument('-u', '--user', action='store', dest='user', help='Username to connect with (username will not be parsed from input file)', default=None)
-		parser.add_argument('-v', '--verbose', action='count', dest='verbosity', help='Verbosity (WARNING: when using -vvv or greater logging output will contain passwords!)', default=0)
+		# Either the user must specify a host or a host file
+		hostgroup = parser.add_mutually_exclusive_group(required=True)
+		hostgroup.add_argument('-h', '--host', action='store', dest='host', help='Host/IP to connect', default=None)
+		hostgroup.add_argument('-hf', '--hostfile', action='store', dest='hostfile', help='File containig a list of hosts/IPs to test', default=None)
+
+		# Either the user must specify a username or a file containing usernames
+		usergroup = parser.add_mutually_exclusive_group(required=True)
+		usergroup.add_argument('-u', '--user', action='store', dest='user', help='Username to connect with', default=None)
+		usergroup.add_argument('-uf', '--userfile', action='store', dest='userfile', help='File containing a list of usernames to use', default=None)
+
+		# Either the user must specify a password or a passwordfile or a file
+		# that contains a set of credentials <user>.<password> one per line
+		passgroup = parser.add_mutually_exclusive_group(required=True)
+		passgroup.add_argument('-p', '--passwd', action='store', dest='passwd', help='Password to test', default=None)
+		passgroup.add_argument('-pf', '--passwdfile', action='store', dest='passwdfile', help='File containing a list of passwords', default=None)
+
+		# Other options
+		parser.add_argument('-l', '--logfile', action='store', dest='logfile', help='Append output also to a logfile')
+		parser.add_argument('-q', '--quiet', action='store_true', dest='quiet', help='Do not print anything to stdout')
+		parser.add_argument('-t', '--threads', action='store', dest='max_threads', help='Maximum number of threads to use (default is %(default)s)', default=500)
+		parser.add_argument('-v', '--verbose', action='count', dest='verbosity', help='Set Verbosity (WARNING: output may contain passwords)', default=0)
 		parser.add_argument('--version', action='version', version=epilog)
 
 		# if an error occurs the help will be displayed automatically
@@ -82,13 +98,6 @@ class PasswordCheck:
 			results = parser.parse_args()
 		except:
 			exit(1)
-
-		# set the values read from the argument parser
-		self.host = results.host
-		self.port = results.port
-		self.credentials_file = results.file
-		self.user = results.user
-		self.num_threads = int(results.threads)
 
 		# if quiet is set, set log level to highest level
 		if results.quiet:
@@ -123,55 +132,56 @@ class PasswordCheck:
 			LOG.info("Will be very verbose (log messages will contain passwords!)")
 
 		LOG.debug("Log levels are %s: %s, paramiko: %s" % (os.path.basename(argv[0]), logging.getLevelName(LOG.level), logging.getLevelName(logging.getLogger("paramiko").level)))
+
+		# set the values of the groups
+		if results.host is not None:
+			self.hosts.append(results.host)
+		if results.hostfile is not None:
+			self.hosts = self._read_list_from_file(results.hostfile)
+
+		if results.user is not None:
+			self.users.append(results.user)
+		if results.userfile is not None:
+			self.users = self._read_list_from_file(results.userfile)
+
+		if results.passwd is not None:
+			self.passwords.append(results.passwd)
+		if results.passwdfile is not None:
+			self.passwords = self._read_list_from_file(results.passwdfile)
+
+		# set the values read from the argument parser
+		# if value is 0, then use the maximum number of threads
+		# if value is > 0, value is an upper bound.
+		# Either use this value (if you have more tasks than that)
+		# or use the number of tasks
+		self.num_threads = int(results.max_threads)
+		if self.num_threads > 0:
+			self.num_threads = min(self.num_threads, len(self.hosts) * len(self.users) * len(self.passwords))
+		else:
+			self.num_threads = len(self.hosts) * len(self.users) * len(self.passwords)
+
+		LOG.debug("Set number of threads to %d" % (self.num_threads))
+
 		LOG.debug("Successfully parsed command line arguments:\n%s" % (results))
 
 
-	# read credentials from file and store them locally in self.credentials
-	def read_credentials(self, filename):
-		"""Read credentials from file and store them in a local list.
-		The file has one set of credentials containing username and password
-		per line seperated by a colon, e.g. user:passwd
-
-		filename -- Name of file which holds the crecentials
-		"""
+	# read a list from a file and return contents as list
+	def _read_list_from_file(self, filename):
+		LOG.debug("Read file %s" % (filename))
+		l = []
 		with open(filename) as f:
 			for line in f:
-				try:
-					# strip line breaks and stuff
-					line = line.strip()
+				# remove e.g. newlines
+				line = line.strip()
 
-					# process the data read
-					if not self.user:
-						# if no default user has been set (using -u/--username)
-						# the user name will be parsed from the current line of
-						# the credentials file
-						user, passwd = line.split(':', 1)
-					else:
-						# if a default user has been set
-						# the complete line from the credentials file will be
-						# treated as password
-						user = self.user
-						passwd = line
+				# if line is not empty add it to the list
+				if line:
+					l.append(line)
 
-					# perform a sanity check and store it to the global
-					# credentials[]
-					if user.strip() and passwd.strip():
-						# continue only if user and password are not empty
-						LOG.debug("Adding %s:%s" % (user, passwd))
-						self.credentials.append("%s:%s" % (user, passwd))
-					else:
-						LOG.warning("Empty user or password string in line: %s" % (line))
+		LOG.debug("Read %d lines" % (len(l)))
 
-				except Exception as e:
-					LOG.error("Error while parsing line: %s" % (line))
-
-		LOG.debug("Read %d credentials from file %s" % (len(self.credentials), filename))
-
-		# if num_credentials == 0 (auto) or greater than the number of
-		# credentials to test set the number of workers to this number
-		if self.num_threads == 0 or self.num_threads > len(self.credentials):
-			self.num_threads = len(self.credentials)
-			LOG.debug("Set maximum number of threads to %d" % (self.num_threads))
+		# return list
+		return l
 
 
 	# Testing
@@ -181,7 +191,7 @@ class PasswordCheck:
 		established.
 		"""
 		# LOG.info("Running %d tests (using %d threads)..." % (len(self.credentials), self.num_threads))
-		LOG.info("Running %d tests..." % (len(self.credentials)))
+		LOG.info("Running %d tests..." % (len(self.hosts) * len(self.users) * len(self.passwords)))
 
 		# run the connection tests and evaluate
 		# using a certain number of threads
@@ -221,15 +231,33 @@ class PasswordCheck:
 
 		crecentials -- list of credentials to use
 		"""
-		LOG.debug("Trying list of %d credentials to establish SSH connection (using %d threads)" % (len(self.credentials), self.num_threads))
+		LOG.debug("Performing %d tests to establish SSH connection (using %d threads)" % (len(self.hosts) * len(self.users) * len(self.passwords), self.num_threads))
 
 		with ThreadPoolExecutor(max_workers=self.num_threads) as e:
-			for cred in self.credentials:
-				# split up each line in username and password
-				user, passwd = cred.strip().split(':', 1)
+			for hostline in self.hosts:
+				hostline = hostline.strip()
+				try:
+					host, port = hostline.split(":", 1)
+				except:
+					host = hostline
+					port = 22
 
-				# submit the job to the ThreadPoolExecutor
-				e.submit(self.ssh_connect, user, passwd, self.host, self.port)
+				try:
+					port = int(port)
+				except:
+					port = 22
+
+				LOG.debug("Host: %s:%d" % (host, port))
+
+				for user in self.users:
+					LOG.debug("Username: %s" % (user))
+
+					for passwd in self.passwords:
+						LOG.debug("Password: %s" % (passwd))
+
+						# submit the job to the ThreadPoolExecutor
+						e.submit(self.ssh_connect, user, passwd, host, port)
+
 
 		LOG.debug("Successful connections: %d" % (len(self.successful_credentials)))
 
@@ -272,7 +300,7 @@ class PasswordCheck:
 
 			# Add credentials which could be successfully used to connect
 			self.successful_credentials.append("%s:%s" % (user, passwd))
-			LOG.debug("Connection successfully established using")
+			LOG.info("Connection successfully established")
 
 		except Exception as e:
 			LOG.debug("Could not establish connection")

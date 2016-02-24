@@ -26,30 +26,39 @@ pip install paramiko
 
 ## Usage
 ```
-usage: passwd_check.py [--help] -f FILE -h HOST [-l LOGFILE] [-p PORT] [-q]
-                       [-t THREADS] [-u USER] [-v] [--version]
+usage: passwd_check.py [--help] (-h HOST | -hf HOSTFILE)
+                       (-u USER | -uf USERFILE) (-p PASSWD | -pf PASSWDFILE)
+                       [-l LOGFILE] [-q] [-t MAX_THREADS] [-v] [--version]
 
 This is a program to test if SSH connections can be established using a list
 of different credentials. If a(t least one) connection could be established by
 the software the exit code of this program will be 1, if no connection could
 be established it will return with exit code 0. This program is used for
 testing if cloud users have changed the default passwords of user accounts
-existing in VM images created by the Cloud provider.
+existing in VM images created by the Cloud provider. When specifying a
+password file and a username file each username will be tested with every
+password. These tests will be performed on every host! This may result in a
+potentially large number of tests (# usernames x # passwords x # hosts). Be
+aware of that.
 
 optional arguments:
   --help                show this help message and exit
-  -f FILE, --file FILE  File containing the credentials
   -h HOST, --host HOST  Host/IP to connect
+  -hf HOSTFILE, --hostfile HOSTFILE
+                        File containig a list of hosts/IPs to test
+  -u USER, --user USER  Username to connect with
+  -uf USERFILE, --userfile USERFILE
+                        File containing a list of usernames to use
+  -p PASSWD, --passwd PASSWD
+                        Password to test
+  -pf PASSWDFILE, --passwdfile PASSWDFILE
+                        File containing a list of passwords
   -l LOGFILE, --logfile LOGFILE
                         Append output also to a logfile
-  -p PORT, --port PORT  Port to connect to (default: 22)
   -q, --quiet           Do not print anything to stdout
-  -t THREADS, --threads THREADS
+  -t MAX_THREADS, --threads MAX_THREADS
                         Maximum number of threads to use (default is 500)
-  -u USER, --user USER  Username to connect with (username will not be parsed
-                        from input file)
-  -v, --verbose         Verbosity (WARNING: when using -vvv or greater logging
-                        output will contain passwords!)
+  -v, --verbose         Set Verbosity (WARNING: output may contain passwords)
   --version             show program's version number and exit
 ```
 
