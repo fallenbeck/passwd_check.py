@@ -25,7 +25,7 @@ logging.getLogger("paramiko").setLevel(logging.CRITICAL)
 class PasswordCheck:
 
 	# program version :-)
-	__version__ = "1.6"
+	__version__ = "1.7"
 
 	port = 22
 	connections = 0
@@ -100,7 +100,7 @@ class PasswordCheck:
 		try:
 			results = parser.parse_args()
 		except:
-			exit(1)
+			exit(2)
 
 		# if quiet is set, set log level to highest level
 		if results.quiet:
@@ -184,7 +184,7 @@ class PasswordCheck:
 
 		except IOError:
 			LOG.error("Could not open file %s" % (filename))
-			exit(255)
+			exit(3)
 
 		LOG.debug("Read %d lines" % (len(l)))
 
@@ -197,6 +197,8 @@ class PasswordCheck:
 		"""Perform tests and exit the program with a return code of 0 if
 		everything went well or return code of 1 if connections could be
 		established.
+		It will exit with 1 if a connection could be established (== bad)
+		If will exit with 0 if no connection could be esablished (== good)
 		"""
 		# LOG.info("Running %d tests (using %d threads)..." % (len(self.credentials), self.num_threads))
 		LOG.info("Running %d tests..." % (len(self.hosts) * len(self.users) * len(self.passwords)))
@@ -206,30 +208,12 @@ class PasswordCheck:
 		self.try_to_connect()
 
 		# exit the program with a particular exit code
-		if self.evaluate:
+		# If a connection could be established, exit code should be 1 (bad)
+		# If no connection could be established, exit code should be 0 (good)
+		if not len(self.successful_credentials):
 			exit(0)
 		else:
 			exit(1)
-
-
-	def evaluate(self):
-		"""Awaits a list of credentials which were used to successfully
-		estblish an SSH connection. Evaluation will be made depending on
-		the contents of this list.
-
-		successful_credentials -- list of credentials
-		"""
-		# number of successfully used credentials
-		num = len(self.successful_credentials)
-
-		LOG.info("Successfully established SSH connections to %s:%s: %d" % (self.host, self.port, num))
-
-		if num:
-			# print out credentials which could be used to connect
-			LOG.warning("Connection established to %s using %s" % (self.host, ",".join(successful_credentials)))
-			return False
-		else:
-			return True
 
 
 	# iterate the credentials and try to establish SSH connections
@@ -239,7 +223,7 @@ class PasswordCheck:
 
 		crecentials -- list of credentials to use
 		"""
-		LOG.debug("Performing %d tests to establish SSH connection (using %d threads)" % (len(self.hosts) * len(self.users) * len(self.passwords), self.num_threads))
+		LOG.debug("Performing %d tests to establish a SSH connection (using %d threads)" % (len(self.hosts) * len(self.users) * len(self.passwords), self.num_threads))
 
 		with ThreadPoolExecutor(max_workers=self.num_threads) as e:
 			for hostline in self.hosts:
