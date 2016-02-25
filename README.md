@@ -12,6 +12,7 @@
 		- [Log file](#log-file)
 		- [Threads](#threads)
 		- [Verbosity](#verbosity)
+		- [Return codes (The Good, the Bad and the Ugly)](#return-codes-the-good-the-bad-and-the-ugly)
 	- [Contact](#contact)
 
 <!-- /TOC -->
@@ -134,6 +135,18 @@ If you want to see more information during the test runs you can set the level o
 | ```-vvvvv```           | DEBUG                        | DEBUG    |
 
 You cannot specify ```-q```/```--quiet``` and ```-v``` at the same time.
+
+
+### Return codes (The Good, the Bad and the Ugly)
+The return code of the script reflects the results of the testing or the occurence of a particular error. The following codes can be returned:
+
+| **Return code** | **Short** | **Explanation** |
+|:---------------:|:---------:| :--------------- |
+| ```0```         | *Good*    | Could not establish a SSH connection |
+| ```1```         | *Bad*     | Could establish (at least one) SSH connection |
+| ```2```         | *Ugly*    | Error while parsing command line arguments |
+| ```3```         | *Ugly*    | Could not read one of the input files containing hosts, usernames and/or passwords |
+
 
 ## Contact
 If you have any questions feel free to contact me at <niels@lrz.de>.
