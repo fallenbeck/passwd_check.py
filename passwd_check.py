@@ -308,7 +308,7 @@ class PasswordCheck:
 
 			# Add credentials which could be successfully used to connect
 			self.successful_credentials.append("%s:%s" % (user, passwd))
-			LOG.info("Connection successfully established")
+			LOG.warning("Connection established to %s:%d using %s:%s" % (host, port, user, passwd))
 
 		except Exception as e:
 			LOG.debug("Could not establish connection")
