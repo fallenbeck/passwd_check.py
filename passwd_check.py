@@ -36,7 +36,7 @@ class PasswordCheck:
 	hosts = []
 
 	# Which credentials were used to connect
-	successful_credentials = []
+	successful_connections = {}
 
 	# Number of threads to use for connection tests
 	num_threads = 500
@@ -257,7 +257,7 @@ class PasswordCheck:
 						e.submit(self.ssh_connect, user, passwd, host, port)
 
 
-		LOG.debug("Successful connections: %d" % (len(self.successful_credentials)))
+		LOG.debug("Successful connections: %d\n%s" % (len(self.successful_connections), self.successful_connections))
 
 
 	def ssh_connect(self, user, passwd, host = "localhost", port = 22):
@@ -297,7 +297,7 @@ class PasswordCheck:
 			)
 
 			# Add credentials which could be successfully used to connect
-			self.successful_credentials.append("%s:%s" % (user, passwd))
+			self.successful_connections["%s:%d" % (host, port)] = "%s:%s" % (user, passwd)
 			LOG.warning("Connection established to %s:%d using %s:%s" % (host, port, user, passwd))
 
 		except Exception as e:
