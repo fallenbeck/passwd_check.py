@@ -41,23 +41,29 @@ class PasswordCheck:
 	# Number of threads to use for connection tests
 	num_threads = 500
 
+	# Should test started by __init__?
+	# Useful when using as a stand-alone application. This switch will be set
+	# to true when run directly from the command line
+
 
 	# initialize the passwort test
-	def __init__(self, credentials, hostname, port = 22):
+	def __init__(self, started_from_cli = False):
 		"""Initialization and running tests."""
 		# Set up logging
 		stdout = logging.StreamHandler()
 		stdout.setFormatter(log_formatter)
 		LOG.addHandler(stdout)
 
-		# Read command line arguments
-		self.parse_args()
+		if started_from_cli:
+			LOG.debug("Script started from CLI; will parse arguments and run tests")
+			# Read command line arguments
+			self.parse_args()
 
-		# Read credentials from file
-		# self.read_credentials(self.credentials_file)
+			# Perform tests
+			self.run_tests()
 
-		# Perform tests
-		self.run_tests()
+		else:
+			LOG.debug("Script initialized programatically, set options an run tests manually")
 
 
 	def parse_args(self):
@@ -303,4 +309,4 @@ class PasswordCheck:
 
 
 if __name__ == "__main__":
-	test = PasswordCheck(credentials = "credentials.txt", hostname = "localhost")
+	test = PasswordCheck(started_from_cli = True)
