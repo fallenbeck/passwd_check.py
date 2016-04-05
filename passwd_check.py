@@ -353,7 +353,6 @@ class PwckCoordinator:
 		if autostart:
 			self.run_tests()
 
-			return self.get_successful_connections()
 
 
 	def _init_scanner(self):
