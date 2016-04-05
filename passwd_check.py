@@ -327,5 +327,60 @@ class PasswordCheck:
 		ssh.close()
 
 
+class PwckCoordinator:
+
+	successful_connections = {}
+
+	pwck = None
+	addresses = []
+	usernames = []
+	passwords = []
+	num_threads = 500
+
+	def __init__(self, list_of_addresses, list_of_usernames, list_of_passwords, number_of_threads = 500, autostart = True):
+		LOG.info("Initializing PwckCoordinator")
+
+		self.addresses = list_of_addresses
+		self.usernames = list_of_usernames
+		self.passwords = list_of_passwords
+
+		self.num_threads = min(num_threads, len(list_of_addresses) * len(list_of_usernames) * len(list_of_passwords))
+
+		LOG.debug("Testing every combination of %d usernames and %d passwords for %d hosts using %d threads" % (len(self.usernames), len(self.passwords), len(self.addresses), self.num_threads))
+
+		self._init_scanner()
+
+		if autostart:
+			self.run_tests()
+
+			return self.get_successful_connections()
+
+
+	def _init_scanner(self):
+		LOG.debug("Initializing password checker")
+		self.pwck = PasswordCheck()
+
+		# set stuff needed for testing
+		self.pwck.hosts = self.addresses
+		self.pwck.users = self.usernames
+		self.pwck.passwords = self.passwords
+
+
+	def run_tests(self):
+		LOG.debug("Starting tests")
+		retval = self.pwck.run_tests()
+
+		if retval > 0:
+			self.successful_connections = self.pwck.successful_connections
+
+			LOG.debug("There were successful connections:\n%s" % (self.successful_connections))
+
+
+	def get_successful_connections(self):
+		return self.successful_connections
+
+
+
+
 if __name__ == "__main__":
 	test = PasswordCheck(started_from_cli = True)
