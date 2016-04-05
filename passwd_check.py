@@ -344,7 +344,7 @@ class PwckCoordinator:
 		self.usernames = list_of_usernames
 		self.passwords = list_of_passwords
 
-		self.num_threads = min(num_threads, len(list_of_addresses) * len(list_of_usernames) * len(list_of_passwords))
+		self.num_threads = min(number_of_threads, len(list_of_addresses) * len(list_of_usernames) * len(list_of_passwords))
 
 		LOG.debug("Testing every combination of %d usernames and %d passwords for %d hosts using %d threads" % (len(self.usernames), len(self.passwords), len(self.addresses), self.num_threads))
 
