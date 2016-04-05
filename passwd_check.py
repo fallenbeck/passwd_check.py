@@ -2,7 +2,7 @@
 # Used to check if cloud users have changed the passwords of the system
 # accounts existing in the VM images provided by the Cloud provider.
 #
-# written by Niels Fallenbeck <niels@lrz.de>
+# written 2016 by Niels Fallenbeck <niels@lrz.de>
 
 from sys import exit, argv, version_info
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
