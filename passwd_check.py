@@ -38,7 +38,7 @@ class PasswordCheck:
 	# Which credentials were used to connect
 	successful_credentials = []
 
-	# Number of threads to use for connectiont tests
+	# Number of threads to use for connection tests
 	num_threads = 500
 
 
