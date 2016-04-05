@@ -25,7 +25,7 @@ logging.getLogger("paramiko").setLevel(logging.CRITICAL)
 class PasswordCheck:
 
 	# program version :-)
-	__version__ = "1.9"
+	__version__ = "2.0"
 
 	port = 22
 	connections = 0
