@@ -206,7 +206,6 @@ class PasswordCheck:
 		It will exit with 1 if a connection could be established (== bad)
 		If will exit with 0 if no connection could be esablished (== good)
 		"""
-		# LOG.info("Running %d tests (using %d threads)..." % (len(self.credentials), self.num_threads))
 		LOG.info("Running %d tests..." % (len(self.hosts) * len(self.users) * len(self.passwords)))
 
 		# run the connection tests and evaluate
@@ -214,7 +213,7 @@ class PasswordCheck:
 		self.try_to_connect()
 
 		# exit the program with a particular exit code
-		# If a connection could be established, exit code should be 1 (bad)
+		# If a connection could be established, exit code should be > 0 (bad)
 		# If no connection could be established, exit code should be 0 (good)
 		if not len(self.successful_credentials):
 			exit(0)
