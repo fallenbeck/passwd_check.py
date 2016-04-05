@@ -45,6 +45,9 @@ class PasswordCheck:
 	# Useful when using as a stand-alone application. This switch will be set
 	# to true when run directly from the command line
 
+	# Has program started directly from the CLI?
+	cli_mode = False
+
 
 	# initialize the passwort test
 	def __init__(self, started_from_cli = False):
@@ -54,8 +57,11 @@ class PasswordCheck:
 		stdout.setFormatter(log_formatter)
 		LOG.addHandler(stdout)
 
-		if started_from_cli:
-			LOG.debug("Script started from CLI; will parse arguments and run tests")
+		# set flag if program has been started from the command line
+		self.cli_mode = started_from_cli
+
+		if self.cli_mode:
+			LOG.debug("Program started from CLI; will parse arguments and run tests")
 			# Read command line arguments
 			self.parse_args()
 
@@ -63,7 +69,7 @@ class PasswordCheck:
 			self.run_tests()
 
 		else:
-			LOG.debug("Script initialized programatically, set options an run tests manually")
+			LOG.debug("Program initialized programatically, set options an run tests manually")
 
 
 	def parse_args(self):
@@ -215,10 +221,24 @@ class PasswordCheck:
 		# exit the program with a particular exit code
 		# If a connection could be established, exit code should be > 0 (bad)
 		# If no connection could be established, exit code should be 0 (good)
-		if not len(self.successful_credentials):
-			exit(0)
+		return self.evaluate(len(self.successful_connections))
+
+
+	def evaluate(self, code, max_code = 255):
+		"""This method is used to handle the return code. A return code of 0
+		means that everything went well while a code != 0 points to either
+		a problem or an unwanted result.
+		If the program has been started from the command line it exits with
+		the given code used as retval, if it has been started programmatically
+		the code is returned by this function."""
+		LOG.debug("Evaluate the code %d (max_code = %d)" % (code, max_code))
+		# set the maximum return code
+		retval = min(max_code, code)
+
+		if self.cli_mode:
+			exit(retval)
 		else:
-			exit(1)
+			return(retval)
 
 
 	# iterate the credentials and try to establish SSH connections
