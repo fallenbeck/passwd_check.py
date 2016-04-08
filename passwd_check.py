@@ -311,6 +311,18 @@ class PasswordCheck:
 		"""
 		LOG.debug("Performing %d tests to establish a SSH connection (using %d threads)" % (len(self.hosts) * len(self.users) * len(self.passwords), self.num_threads))
 
+		# determine the needed size of the thread pool but keep the upper
+		# limit into consideration
+		num_workers = 0
+		if self.num_threads > 0:
+			num_workers = min(self.num_threads, len(self.hosts) * len(self.users) * len(self.passwords))
+		else:
+			num_workers = len(self.hosts) * len(self.users) * len(self.passwords)
+
+		LOG.debug("Using thread pool with {} workers".format(num_workers))
+
+		futures = []
+
 		with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as e:
 			for hostline in self.hosts:
 				hostline = hostline.strip()
@@ -334,8 +346,12 @@ class PasswordCheck:
 						LOG.debug("Password: %s" % (passwd))
 
 						# submit the job to the ThreadPoolExecutor
-						e.submit(self.ssh_connect, user, passwd, host, port)
+						futures.append(e.submit(self.ssh_connect, user, passwd, host, port))
 
+
+		LOG.debug("Waiting for tasks to complete")
+		results = concurrent.futures.wait(futures, timeout=3)
+		LOG.debug("{} tasks completed".format(len(results.done)))
 
 		LOG.debug("Successful connections: %d\n%s" % (len(self.successful_connections), self.successful_connections))
 
