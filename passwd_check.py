@@ -160,17 +160,17 @@ class PasswordCheck:
 		if results.host is not None:
 			self.hosts.append(results.host)
 		if results.hostfile is not None:
-			self.hosts = self._read_list_from_file(results.hostfile)
+			self.hosts = PwckHelper.read_list_from_file(results.hostfile)
 
 		if results.user is not None:
 			self.users.append(results.user)
 		if results.userfile is not None:
-			self.users = self._read_list_from_file(results.userfile)
+			self.users = PwckHelper.read_list_from_file(results.userfile)
 
 		if results.passwd is not None:
 			self.passwords.append(results.passwd)
 		if results.passwdfile is not None:
-			self.passwords = self._read_list_from_file(results.passwdfile)
+			self.passwords = PwckHelper.read_list_from_file(results.passwdfile)
 
 		# set the values read from the argument parser
 		# if value is 0, then use the maximum number of threads
@@ -186,36 +186,6 @@ class PasswordCheck:
 		LOG.debug("Set number of threads to %d" % (self.num_threads))
 
 		LOG.debug("Successfully parsed command line arguments:\n%s" % (results))
-
-
-	# read a list from a file and return contents as list
-	def _read_list_from_file(self, filename):
-		"""
-		Read the contents of a file and return it as a list.
-		Each line of the file will be treaded as a list item.
-
-		filename -- name of the file to read
-		"""
-		LOG.debug("Read file %s" % (filename))
-		l = []
-		try:
-			with open(filename) as f:
-				for line in f:
-					# remove e.g. newlines
-					line = line.strip()
-
-					# if line is not empty add it to the list
-					if line:
-						l.append(line)
-
-		except IOError:
-			LOG.error("Could not open file %s" % (filename))
-			exit(3)
-
-		LOG.debug("Read %d lines" % (len(l)))
-
-		# return list
-		return l
 
 
 	# Testing
@@ -373,8 +343,6 @@ class PwckCoordinator:
 		if autostart:
 			self.run_tests()
 
-
-
 	def _init_scanner(self):
 		LOG.debug("Initializing password checker")
 		self.pwck = PasswordCheck()
@@ -397,6 +365,33 @@ class PwckCoordinator:
 
 	def get_successful_connections(self):
 		return self.successful_connections
+
+
+class PwckHelper:
+	@staticmethod
+	def read_list_from_file(filename):
+		"""
+		Read the contents of a file and return it as a list.
+		Each line of the file will be treaded as a list item.
+
+		filename -- name of the file to read
+		"""
+		l = []
+		try:
+			with open(filename) as f:
+				for line in f:
+					# remove e.g. newlines
+					line = line.strip()
+
+					# if line is not empty add it to the list
+					if line:
+						l.append(line)
+
+		except IOError:
+			pass
+
+		# return list
+		return l
 
 
 
