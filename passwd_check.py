@@ -23,6 +23,13 @@ LOG.setLevel(logging.ERROR)
 logging.getLogger("paramiko").setLevel(logging.CRITICAL)
 
 class PasswordCheck:
+	"""
+	This is the main class which covers functionality to perform SSH connection
+	tests. It has been designed to automatically test a potentially huge number
+	of hosts with a potentially huge number of different credentials.
+	Background is that we wanted to perform automatic security tests at a
+	couple of customers VMs in our Cloud infrastructure.
+	"""
 
 	# program version :-)
 	__version__ = "2.0"
@@ -408,6 +415,11 @@ class PasswordCheck:
 
 
 class PwckHelper:
+	"""
+	This class is intended to provide helper functions which are not related
+	to the SSH password scan process.
+	"""
+
 	@staticmethod
 	def read_list_from_file(filename):
 		"""
