@@ -5,7 +5,7 @@
 # written 2016 by Niels Fallenbeck <niels@lrz.de>
 
 from sys import exit, argv, version_info
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+import concurrent.futures
 import os
 import paramiko
 from paramiko.ssh_exception import BadHostKeyException, AuthenticationException, SSHException
@@ -122,27 +122,11 @@ class PasswordCheck:
 		except:
 			exit(2)
 
-		# if quiet is set, set log level to highest level
+		# set the log level
 		if results.quiet:
-			LOG.setLevel(logging.CRITICAL)
-
-		# set log level depending on verbosity
-		# this overrides the silent flag
-		elif results.verbosity == 0:
-			LOG.setLevel(logging.WARN)
-		elif results.verbosity == 1:
-			LOG.setLevel(logging.INFO)
-		elif results.verbosity == 2:
-			LOG.setLevel(logging.DEBUG)
-		elif results.verbosity == 3:
-			LOG.setLevel(logging.DEBUG)
-			logging.getLogger("paramiko").setLevel(logging.ERROR)
-		elif results.verbosity == 4:
-			LOG.setLevel(logging.DEBUG)
-			logging.getLogger("paramiko").setLevel(logging.INFO)
+			self.set_verbosity(-1)
 		else:
-			LOG.setLevel(logging.DEBUG)
-			logging.getLogger("paramiko").setLevel(logging.DEBUG)
+			self.set_verbosity(results.verbosity)
 
 		# if a logfile has been specified change the basicConfig
 		# to additionally print everything to that file
@@ -154,38 +138,126 @@ class PasswordCheck:
 		if results.verbosity >= 2:
 			LOG.info("Will be very verbose (log messages will contain passwords!)")
 
-		LOG.debug("Log levels are %s: %s, paramiko: %s" % (os.path.basename(argv[0]), logging.getLevelName(LOG.level), logging.getLevelName(logging.getLogger("paramiko").level)))
-
 		# set the values of the groups
 		if results.host is not None:
 			self.hosts.append(results.host)
 		if results.hostfile is not None:
-			self.hosts = PwckHelper.read_list_from_file(results.hostfile)
+			self.load_hosts_from_file(results.hostfile)
 
 		if results.user is not None:
 			self.users.append(results.user)
 		if results.userfile is not None:
-			self.users = PwckHelper.read_list_from_file(results.userfile)
+			self.load_usernames_from_file(results.userfile)
 
 		if results.passwd is not None:
 			self.passwords.append(results.passwd)
 		if results.passwdfile is not None:
-			self.passwords = PwckHelper.read_list_from_file(results.passwdfile)
+			self.load_passwords_from_file(results.passwdfile)
 
+		# set the values read from the argument parser
+		# set the upper boundary of the number of tasks to use
+		# 0 means there are no limits (which is not recommended)
+		self.set_max_threads(results.max_threads)
+
+		LOG.debug("Successfully parsed command line arguments:\n%s" % (results))
+
+
+	# Setting values
+	def set_verbosity(self, verbosity):
+		"""
+		Set the verbosity used for log output.
+		If the quiet switch was set, you will receive -1 as verbosity else
+		verbosity will be represent the number of -v's a user has specified.
+
+		verbosity -- Verbosity to use (from -1 to 5)
+		"""
+		# if quiet is set, set log level to highest level
+		if verbosity < 0:
+			LOG.setLevel(logging.CRITICAL)
+
+		# set log level depending on verbosity
+		# this overrides the silent flag
+		elif verbosity == 0:
+			LOG.setLevel(logging.WARN)
+		elif verbosity == 1:
+			LOG.setLevel(logging.INFO)
+		elif verbosity == 2:
+			LOG.setLevel(logging.DEBUG)
+		elif verbosity == 3:
+			LOG.setLevel(logging.DEBUG)
+			logging.getLogger("paramiko").setLevel(logging.ERROR)
+		elif verbosity == 4:
+			LOG.setLevel(logging.DEBUG)
+			logging.getLogger("paramiko").setLevel(logging.INFO)
+		else:
+			LOG.setLevel(logging.DEBUG)
+			logging.getLogger("paramiko").setLevel(logging.DEBUG)
+
+		LOG.debug("Updated log levels to %s: %s, paramiko: %s" % (os.path.basename(argv[0]), logging.getLevelName(LOG.level), logging.getLevelName(logging.getLogger("paramiko").level)))
+
+	def set_max_threads(self, max_threads):
+		"""
+		Set the maximum number of threads to be used to perform the security
+		tests. Note that this sets the upper boundary of the number of threads.
+		During the scan operation this is the maximum number of workers running
+		at the same time. But the software could always use less. :-)
+		A value of 0 means that no upper limit exists. Be careful with this
+		because it can render your computer unresponsive when you test a
+		huge number of hosts, usernames and passwords at once.
+
+		num_threads -- number of threads to use, 0 means no limits
+		"""
 		# set the values read from the argument parser
 		# if value is 0, then use the maximum number of threads
 		# if value is > 0, value is an upper bound.
 		# Either use this value (if you have more tasks than that)
 		# or use the number of tasks
-		self.num_threads = int(results.max_threads)
-		if self.num_threads > 0:
-			self.num_threads = min(self.num_threads, len(self.hosts) * len(self.users) * len(self.passwords))
-		else:
-			self.num_threads = len(self.hosts) * len(self.users) * len(self.passwords)
+		self.num_threads = int(max_threads)
 
-		LOG.debug("Set number of threads to %d" % (self.num_threads))
+		LOG.debug("Set maximum number of threads to %d" % (max_threads))
 
-		LOG.debug("Successfully parsed command line arguments:\n%s" % (results))
+
+	# Programatically use
+	def load_usernames_from_file(self, filename):
+		"""
+		Load a list of usernames from a file that should be taken into
+		consideration during the tests.
+		"""
+		usernames = PwckHelper.read_list_from_file(filename)
+		LOG.debug("Loaded {} usernames from file {}".format(len(usernames), filename))
+		self.users = usernames
+
+	def load_passwords_from_file(self, filename):
+		"""
+		Load a list of passwords from a file that should be used during testing.
+		"""
+		passwords = PwckHelper.read_list_from_file(filename)
+		LOG.debug("Loaded {} passwords from file {}".format(len(passwords), filename))
+		self.passwords = passwords
+
+	def load_hosts_from_file(self, filename):
+		"""
+		Load a list of hosts/ips from a file that should be tested.
+		"""
+		hosts = PwckHelper.read_list_from_file(filename)
+		LOG.debug("Loaded {} hosts/addresses from file {}".format(len(hosts), filename))
+		self.hosts = hosts
+
+	def set_hosts_to_scan(self, list_of_ips):
+		"""
+		Set a list of hosts/ips to be scanned.
+		"""
+		LOG.debug("Set {} hosts/addresses to scan".format(len(list_of_ips)))
+		self.hosts = list_of_ips
+
+	def get_successful_connections(self):
+		"""
+		Returns the dict of successful connections:
+			host:port -> username:password
+		"""
+		LOG.debug("Return dict with {} successful connections".format(len(self.successful_connections)))
+		return self.successful_connections
+
 
 
 	# Testing
@@ -194,7 +266,7 @@ class PasswordCheck:
 		Perform tests and exit the program with a return code of 0 if
 		everything went well or return code of 1 if connections could be
 		established.
-		It will exit with 1 if a connection could be established (== bad)
+		It will exit with >=1 if a connection could be established (== bad)
 		If will exit with 0 if no connection could be esablished (== good)
 		"""
 		LOG.info("Running %d tests..." % (len(self.hosts) * len(self.users) * len(self.passwords)))
@@ -239,7 +311,7 @@ class PasswordCheck:
 		"""
 		LOG.debug("Performing %d tests to establish a SSH connection (using %d threads)" % (len(self.hosts) * len(self.users) * len(self.passwords), self.num_threads))
 
-		with ThreadPoolExecutor(max_workers=self.num_threads) as e:
+		with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as e:
 			for hostline in self.hosts:
 				hostline = hostline.strip()
 				try:
