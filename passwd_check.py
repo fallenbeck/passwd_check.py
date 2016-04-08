@@ -44,7 +44,6 @@ class PasswordCheck:
 	# Should test started by __init__?
 	# Useful when using as a stand-alone application. This switch will be set
 	# to true when run directly from the command line
-
 	# Has program started directly from the CLI?
 	cli_mode = False
 
