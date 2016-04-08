@@ -51,7 +51,14 @@ class PasswordCheck:
 
 	# initialize the passwort test
 	def __init__(self, started_from_cli = False):
-		"""Initialization and running tests."""
+		"""
+		Initialization and running tests.
+		When started from the CLI the script will end with a exit(n) where n is the
+		exit code. If not started from the CLI (when used programatically) this
+		program will not exit but return the exit code n (but keeps running).
+
+		started_from_cli -- switch to indicate if script has been started from the CLI
+		"""
 		# Set up logging
 		stdout = logging.StreamHandler()
 		stdout.setFormatter(log_formatter)
@@ -73,7 +80,9 @@ class PasswordCheck:
 
 
 	def parse_args(self):
-		"""Parse the command line arguments."""
+		"""
+		Parse the command line arguments.
+		"""
 		description = "This is a program to test if SSH connections can be established using a list of	different credentials. If a(t least one) connection could be established by the	software the exit code of this program will be 1, if no connection could be established	it will return with exit code 0. This program is used for testing if cloud users have changed the default passwords of user accounts existing in VM images created by the Cloud provider. When specifying a password file and a username file each username will be tested with every password. These tests will be performed on every host! This may result in a potentially large number of tests (# usernames x # passwords x # hosts). Be aware of that."
 
 		epilog = "%s %s, Python %d.%d.%d, Paramiko %s" % (__class__.__name__, PasswordCheck.__version__, version_info[0], version_info[1], version_info[2], paramiko.__version__)
@@ -182,6 +191,12 @@ class PasswordCheck:
 
 	# read a list from a file and return contents as list
 	def _read_list_from_file(self, filename):
+		"""
+		Read the contents of a file and return it as a list.
+		Each line of the file will be treaded as a list item.
+
+		filename -- name of the file to read
+		"""
 		LOG.debug("Read file %s" % (filename))
 		l = []
 		try:
@@ -206,7 +221,8 @@ class PasswordCheck:
 
 	# Testing
 	def run_tests(self):
-		"""Perform tests and exit the program with a return code of 0 if
+		"""
+		Perform tests and exit the program with a return code of 0 if
 		everything went well or return code of 1 if connections could be
 		established.
 		It will exit with 1 if a connection could be established (== bad)
@@ -225,12 +241,17 @@ class PasswordCheck:
 
 
 	def evaluate(self, code, max_code = 255):
-		"""This method is used to handle the return code. A return code of 0
+		"""
+		This method is used to handle the return code. A return code of 0
 		means that everything went well while a code != 0 points to either
 		a problem or an unwanted result.
 		If the program has been started from the command line it exits with
 		the given code used as retval, if it has been started programmatically
-		the code is returned by this function."""
+		the code is returned by this function.
+
+		code -- exit code you want to return or quit with
+		max_code -- maximum exit code
+		"""
 		LOG.debug("Evaluate the code %d (max_code = %d)" % (code, max_code))
 		# set the maximum return code
 		retval = min(max_code, code)
@@ -243,10 +264,9 @@ class PasswordCheck:
 
 	# iterate the credentials and try to establish SSH connections
 	def try_to_connect(self):
-		"""Use the credentials and try to establish SSH connections to
+		"""
+		Use the credentials and try to establish SSH connections to
 		the host.
-
-		crecentials -- list of credentials to use
 		"""
 		LOG.debug("Performing %d tests to establish a SSH connection (using %d threads)" % (len(self.hosts) * len(self.users) * len(self.passwords), self.num_threads))
 
@@ -280,7 +300,8 @@ class PasswordCheck:
 
 
 	def ssh_connect(self, user, passwd, host = "localhost", port = 22):
-		"""Try to establish a single SSH connection to host:port
+		"""
+		Try to establish a single SSH connection to host:port
 		using the provided user and passwd.
 
 		user -- username
