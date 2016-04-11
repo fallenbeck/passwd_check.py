@@ -54,9 +54,11 @@ class PasswordCheck:
 	# Has program started directly from the CLI?
 	cli_mode = False
 
+	# Should program exit after finishing?
+	exit_when_finished = True
 
 	# initialize the passwort test
-	def __init__(self, started_from_cli = False):
+	def __init__(self, started_from_cli = False, exit_when_finished = True):
 		"""
 		Initialization and running tests.
 		When started from the CLI the script will end with a exit(n) where n is the
@@ -64,6 +66,7 @@ class PasswordCheck:
 		program will not exit but return the exit code n (but keeps running).
 
 		started_from_cli -- switch to indicate if script has been started from the CLI
+		exit_when_finished -- if True, exit(n) is called when finished
 		"""
 		# Set up logging
 		stdout = logging.StreamHandler()
@@ -71,7 +74,9 @@ class PasswordCheck:
 		LOG.addHandler(stdout)
 
 		# set flag if program has been started from the command line
-		self.cli_mode = started_from_cli
+		# Then we need to also set the exit_when_finished flag
+		self.set_cli_mode(started_from_cli)
+		self.set_exit_mode(exit_when_finished)
 
 		if self.cli_mode:
 			LOG.debug("Program started from CLI; will parse arguments and run tests")
@@ -221,7 +226,38 @@ class PasswordCheck:
 		# or use the number of tasks
 		self.num_threads = int(max_threads)
 
-		LOG.debug("Set maximum number of threads to %d" % (max_threads))
+		LOG.debug("Set maximum number of workers to %d" % (max_threads))
+
+	def set_cli_mode(self, started_from_cli):
+		"""
+		Set the CLI mode. It should be set to True if this program has been
+		started from the command line interface (CLI).
+		Setting this to True would cause the program to parse the arguments
+		received on the CLI and it will also set the exit_when_finished flag
+		to True to ensure that the program exits with a meaningful exit code.
+
+		started_from_cli -- True if started from CLI, false otherwise
+		"""
+		LOG.debug("Enable CLI mode? %r" % (started_from_cli))
+		self.cli_mode = started_from_cli
+		if started_from_cli:
+			self.set_exit_mode(True)
+
+	def set_exit_mode(self, exit_when_finished):
+		"""
+		This function sets the exit_when_finished flag.
+		If true, the program will exit with a meaningful exit code, otherwise
+		the program will exit but might not return a meaningful code.
+		This should be set to True if started from the command line.
+		If you run into threading problems when using this program from another
+		program Programatically you can also set this to True to make sure that
+		no old tasks will stay active.
+
+		exit_when_finished -- True if you want to exit this software after
+		completion, False otherwise
+		"""
+		LOG.debug("Exit when finished? %r" % (exit_when_finished))
+		self.exit_when_finished = exit_when_finished
 
 
 	# Programatically use
@@ -304,9 +340,14 @@ class PasswordCheck:
 		# set the maximum return code
 		retval = min(max_code, code)
 
-		if self.cli_mode:
+		LOG.debug("Return value set to %d" % (retval))
+		LOG.debug("Will exit? %r" % (self.exit_when_finished))
+
+		if self.exit_when_finished:
+			LOG.debug("Will exit")
 			exit(retval)
 		else:
+			LOG.debug("Will return")
 			return(retval)
 
 
