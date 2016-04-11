@@ -69,9 +69,18 @@ class PasswordCheck:
 		exit_when_finished -- if True, exit(n) is called when finished
 		"""
 		# Set up logging
-		stdout = logging.StreamHandler()
-		stdout.setFormatter(log_formatter)
-		LOG.addHandler(stdout)
+		# Check if there are any existing handlers
+		# Add only new logging handler if there is none
+		if not len(LOG.handlers):
+			stdout = logging.StreamHandler()
+			stdout.setFormatter(log_formatter)
+			LOG.addHandler(stdout)
+
+			LOG.debug("Added new StreamHandler for %s" % (self))
+		else:
+			LOG.debug("Did not add any logging handlers, there are existing ones")
+
+		LOG.debug("Log Handlers:\n%s" % (LOG.handlers))
 
 		# set flag if program has been started from the command line
 		# Then we need to also set the exit_when_finished flag
@@ -143,9 +152,17 @@ class PasswordCheck:
 		# if a logfile has been specified change the basicConfig
 		# to additionally print everything to that file
 		if results.logfile is not None:
-			fh = logging.FileHandler(results.logfile)
-			fh.setFormatter(log_formatter)
-			LOG.addHandler(fh)
+			if len(LOG.handlers) >= 2:
+				fh = logging.FileHandler(results.logfile)
+				fh.setFormatter(log_formatter)
+				LOG.addHandler(fh)
+
+				LOG.debug("Added new FileHandler for %s: %s" % (self, results.logfile))
+			else:
+				LOG.debug("Did not add logfile handler...")
+
+				LOG.debug("Log Handlers:\n%s" % (LOG.handlers))
+
 
 		if results.verbosity >= 2:
 			LOG.info("Will be very verbose (log messages will contain passwords!)")
