@@ -48,6 +48,9 @@ class PasswordCheck:
 	# Number of threads to use for connection tests
 	num_threads = 500
 
+	# This is the pool of workers
+	pool = None
+
 	# Should test started by __init__?
 	# Useful when using as a stand-alone application. This switch will be set
 	# to true when run directly from the command line
@@ -277,6 +280,33 @@ class PasswordCheck:
 		self.exit_when_finished = exit_when_finished
 
 
+	def set_number_of_workers(self, number_of_workers):
+		"""
+		This function sets the number of workers to use to perform the scans
+
+		number_of_workers -- Number of workers to use
+		"""
+		LOG.debug("Set number of max. workers to %d" % (number_of_workers))
+		self.num_threads = number_of_workers
+		self._create_worker_pool()
+
+
+
+	def _create_worker_pool(self, num_workers = None):
+		"""
+		This function creates the worker pool which is used to execute tasks
+		during the scan.
+
+		number_of_workers -- number of workers
+		"""
+		num = self.num_threads
+		if num_workers is None:
+			num = self.num_threads
+
+		LOG.debug("Creating worker pool")
+		self.pool = concurrent.futures.ThreadPoolExecutor(max_workers=num)
+
+
 	# Programatically use
 	def load_usernames_from_file(self, filename):
 		"""
@@ -384,11 +414,14 @@ class PasswordCheck:
 		else:
 			num_workers = len(self.hosts) * len(self.users) * len(self.passwords)
 
+		LOG.debug("Initializing worker pool")
+		self._create_worker_pool(num_workers)
+
 		LOG.debug("Using pool with %d workers" % (num_workers))
 
 		futures = []
 
-		with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as e:
+		if self.pool is not None:
 			for hostline in self.hosts:
 				hostline = hostline.strip()
 				try:
@@ -407,7 +440,10 @@ class PasswordCheck:
 						LOG.debug("Testing %s:%s@%s:%d ..." % (user, passwd, host, port))
 
 						# submit the job to the ThreadPoolExecutor
-						futures.append(e.submit(self.ssh_connect, user, passwd, host, port))
+						a = self.pool.submit(self.ssh_connect, user, passwd, host, port)
+						futures.append(a)
+		else:
+			LOG.error("Worker pool not initialized. Skipping ...")
 
 
 		LOG.debug("Waiting for tasks to complete")
