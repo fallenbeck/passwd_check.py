@@ -374,7 +374,7 @@ class PasswordCheck:
 		Use the credentials and try to establish SSH connections to
 		the host.
 		"""
-		LOG.debug("Performing %d tests to establish a SSH connection (using %d threads)" % (len(self.hosts) * len(self.users) * len(self.passwords), self.num_threads))
+		LOG.debug("Performing %d tests to establish a SSH connection" % (len(self.hosts) * len(self.users) * len(self.passwords)))
 
 		# determine the needed size of the thread pool but keep the upper
 		# limit into consideration
@@ -384,7 +384,7 @@ class PasswordCheck:
 		else:
 			num_workers = len(self.hosts) * len(self.users) * len(self.passwords)
 
-		LOG.debug("Using thread pool with {} workers".format(num_workers))
+		LOG.debug("Using pool with %d workers" % (num_workers))
 
 		futures = []
 
@@ -402,13 +402,9 @@ class PasswordCheck:
 				except:
 					port = 22
 
-				LOG.debug("Host: %s:%d" % (host, port))
-
 				for user in self.users:
-					LOG.debug("Username: %s" % (user))
-
 					for passwd in self.passwords:
-						LOG.debug("Password: %s" % (passwd))
+						LOG.debug("Testing %s:%s@%s:%d ..." % (user, passwd, host, port))
 
 						# submit the job to the ThreadPoolExecutor
 						futures.append(e.submit(self.ssh_connect, user, passwd, host, port))
