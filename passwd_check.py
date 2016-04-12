@@ -74,6 +74,7 @@ class PasswordCheck:
 		# Set up logging
 		# Check if there are any existing handlers
 		# Add only new logging handler if there is none
+		global LOG
 		if not len(LOG.handlers):
 			stdout = logging.StreamHandler()
 			stdout.setFormatter(log_formatter)
