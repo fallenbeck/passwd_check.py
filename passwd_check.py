@@ -61,7 +61,7 @@ class PasswordCheck:
 	exit_when_finished = True
 
 	# initialize the passwort test
-	def __init__(self, started_from_cli = False, exit_when_finished = True):
+	def __init__(self, started_from_cli = False, exit_when_finished = True, logger = None):
 		"""
 		Initialization and running tests.
 		When started from the CLI the script will end with a exit(n) where n is the
@@ -75,6 +75,9 @@ class PasswordCheck:
 		# Check if there are any existing handlers
 		# Add only new logging handler if there is none
 		global LOG
+		if logger:
+			LOG = logger
+
 		if not len(LOG.handlers):
 			stdout = logging.StreamHandler()
 			stdout.setFormatter(log_formatter)
@@ -196,6 +199,10 @@ class PasswordCheck:
 
 
 	# Setting values
+	def set_logger(self, logger):
+		global LOG
+		LOG = logger
+
 	def set_verbosity(self, verbosity):
 		"""
 		Set the verbosity used for log output.
