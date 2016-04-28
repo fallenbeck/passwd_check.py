@@ -321,7 +321,7 @@ class PasswordCheck:
 		Load a list of usernames from a file that should be taken into
 		consideration during the tests.
 		"""
-		usernames = PwckHelper.read_list_from_file(filename)
+		usernames = self._read_list_from_file(filename)
 		LOG.debug("Loaded {} usernames from file {}".format(len(usernames), filename))
 		self.users = usernames
 
@@ -329,7 +329,7 @@ class PasswordCheck:
 		"""
 		Load a list of passwords from a file that should be used during testing.
 		"""
-		passwords = PwckHelper.read_list_from_file(filename)
+		passwords = self._read_list_from_file(filename)
 		LOG.debug("Loaded {} passwords from file {}".format(len(passwords), filename))
 		self.passwords = passwords
 
@@ -337,7 +337,7 @@ class PasswordCheck:
 		"""
 		Load a list of hosts/ips from a file that should be tested.
 		"""
-		hosts = PwckHelper.read_list_from_file(filename)
+		hosts = self._read_list_from_file(filename)
 		LOG.debug("Loaded {} hosts/addresses from file {}".format(len(hosts), filename))
 		self.hosts = hosts
 
@@ -355,6 +355,33 @@ class PasswordCheck:
 		"""
 		LOG.debug("Return dict with {} successful connections".format(len(self.successful_connections)))
 		return self.successful_connections
+
+	# Helper functions
+	def _read_list_from_file(self, filename):
+		"""
+		Read the contents of a file and return it as a list.
+		Each line of the file will be treaded as a list item.
+
+		filename -- name of the file to read
+		"""
+		LOG.debug("Read list of items from {}".format(filename))
+		l = []
+		try:
+			with open(filename) as f:
+				for line in f:
+					# remove e.g. newlines
+					line = line.strip()
+
+					# if line is not empty add it to the list
+					if line:
+						l.append(line)
+
+		except IOError as e:
+			LOG.error("Could not open file: {}".format(e))
+
+		# return list
+		LOG.debug("Return list with {} elements".format(len(l)))
+		return l
 
 
 
@@ -508,42 +535,6 @@ class PasswordCheck:
 		# Connection could be established.
 		# Close the SSH connection in any case to prevent program hangs
 		ssh.close()
-
-
-
-
-class PwckHelper:
-	"""
-	This class is intended to provide helper functions which are not related
-	to the SSH password scan process.
-	"""
-
-	@staticmethod
-	def read_list_from_file(filename):
-		"""
-		Read the contents of a file and return it as a list.
-		Each line of the file will be treaded as a list item.
-
-		filename -- name of the file to read
-		"""
-		l = []
-		try:
-			with open(filename) as f:
-				for line in f:
-					# remove e.g. newlines
-					line = line.strip()
-
-					# if line is not empty add it to the list
-					if line:
-						l.append(line)
-
-		except IOError:
-			pass
-
-		# return list
-		return l
-
-
 
 
 if __name__ == "__main__":
