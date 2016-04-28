@@ -32,7 +32,7 @@ class PasswordCheck:
 	"""
 
 	# program version :-)
-	__version__ = "2.2"
+	__version__ = "2.3"
 
 	port = 22
 	connections = 0
