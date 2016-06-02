@@ -475,8 +475,6 @@ class PasswordCheck:
 
 				for user in self.users:
 					for passwd in self.passwords:
-						LOG.debug("Testing %s:%s@%s:%d ..." % (user, passwd, host, port))
-
 						# submit the job to the ThreadPoolExecutor
 						a = self.pool.submit(self.ssh_connect, user, passwd, host, port)
 						futures.append(a)
