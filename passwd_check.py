@@ -498,7 +498,7 @@ class PasswordCheck:
 		host -- host to connect to
 		port -- port to connect to
 		"""
-		LOG.debug("Trying to connect %s:%s@%s:%d ..." % (user, passwd, host, port))
+		LOG.debug("Trying to connect %s@%s:%d ..." % (user, host, port))
 		# Create paramiko ssh client
 		ssh = paramiko.SSHClient()
 		# Accept unknown host keys
@@ -527,7 +527,8 @@ class PasswordCheck:
 
 			# Add credentials which could be successfully used to connect
 			self.successful_connections["%s:%d" % (host, port)] = "%s:%s" % (user, passwd)
-			LOG.warning("Connection established to %s:%d using %s:%s" % (host, port, user, passwd))
+			LOG.warning("Connection established to %s:%d as %s" % (host, port, user))
+			LOG.debug("Connection established to %s:%d as %s:%s" % (host, port, user, passwd))
 
 		except Exception as e:
 			LOG.debug("Could not establish connection")
