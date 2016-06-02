@@ -149,6 +149,12 @@ The return code of the script reflects the results of the testing or the occuren
 | ```2```         | *Ugly*    | Error while parsing command line arguments |
 | ```3```         | *Ugly*    | Could not read one of the input files containing hosts, usernames and/or passwords |
 
+### Todo
+There are some feature that should be implemented in the future.
+
+- Specify connection timeout from the command line
+
+
 
 ## Contact
 If you have any questions feel free to contact me at <niels@lrz.de>.
