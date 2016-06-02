@@ -124,15 +124,17 @@ If you specify a maximum number of threads to use with ```-t```/```--threads``` 
 ### Verbosity
 If you want to see more information during the test runs you can set the level of verbosity by using ```-v```, ```-vv```, ```-vvv```, ```-vvvv```, or ```-vvvvv```. If you want to see nothing during the tests, you can switch into a quiet mode by using ```-q```/```--quiet```.
 
-| **Option**             | **PasswordCheck Log Level**  | **Paramiko Log Level** |
-| :--------------------- | :--------------------------- | :--------------------- |
-| ```-q```/```--quiet``` | CRITICAL                     | CRITICAL |
-|                        | WARN                         | CRITICAL |
-| ```-v```               | INFO                         | CRITICAL |
-| ```-vv```              | DEBUG                        | CRITICAL |
-| ```-vvv```             | DEBUG                        | ERROR    |
-| ```-vvvv```            | DEBUG                        | INFO     |
-| ```-vvvvv```           | DEBUG                        | DEBUG    |
+| **Option**             | **password_check.py Log Level**  | **Paramiko Log Level** | **Remarks** |
+| :--------------------- | :--------------------------- | :--------------------- |:--- |
+| ```-q```/```--quiet``` | CRITICAL                     | CRITICAL | |
+|                        | WARN                         | CRITICAL | |
+| ```-v```               | INFO                         | CRITICAL | |
+| ```-vv```              | DEBUG                        | CRITICAL | Log output may contain tested passwords! |
+| ```-vvv```             | DEBUG                        | ERROR    | Log output may contain tested passwords! |
+| ```-vvvv```            | DEBUG                        | INFO     | Log output may contain tested passwords! |
+| ```-vvvvv```           | DEBUG                        | DEBUG    | Log output may contain tested passwords! |
+
+When password_check.py is switched to debug output, it will write the password(s) to the log file that have been used during successful connections.
 
 You cannot specify ```-q```/```--quiet``` and ```-v``` at the same time.
 
