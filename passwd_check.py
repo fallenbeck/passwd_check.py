@@ -32,7 +32,7 @@ class PasswordCheck:
 	"""
 
 	# program version :-)
-	__version__ = "2.3"
+	__version__ = "2.4"
 
 	port = 22
 	connections = 0
@@ -448,6 +448,9 @@ class PasswordCheck:
 			num_workers = min(self.num_threads, len(self.hosts) * len(self.users) * len(self.passwords))
 		else:
 			num_workers = len(self.hosts) * len(self.users) * len(self.passwords)
+
+		LOG.debug("Initialize empty list for successful connections")
+		self.successful_connections = {}
 
 		LOG.debug("Initializing worker pool")
 		self._create_worker_pool(num_workers)
