@@ -449,8 +449,9 @@ class PasswordCheck:
 		else:
 			num_workers = len(self.hosts) * len(self.users) * len(self.passwords)
 
-		LOG.debug("Initialize empty list for successful connections")
+		LOG.debug("Initializing empty list for successful connections")
 		self.successful_connections = {}
+		LOG.debug("Length of list: {}".format(len(self.successful_connections)))
 
 		LOG.debug("Initializing worker pool")
 		self._create_worker_pool(num_workers)
