@@ -378,6 +378,7 @@ class PasswordCheck:
 
 		except IOError as e:
 			LOG.error("Could not open file: {}".format(e))
+			raise
 
 		# return list
 		LOG.debug("Return list with {} elements".format(len(l)))
