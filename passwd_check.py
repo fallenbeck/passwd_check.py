@@ -32,7 +32,7 @@ class PasswordCheck:
 	"""
 
 	# program version :-)
-	__version__ = "2.5"
+	__version__ = "2.6"
 
 	port = 22
 	connections = 0
@@ -365,6 +365,14 @@ class PasswordCheck:
 		filename -- name of the file to read
 		"""
 		LOG.debug("Read list of items from {}".format(filename))
+
+		# Do some magic here to read the file if the user
+		# has specified a relative directory
+		if not filename.startswith('/'):
+			my_dir = os.path.dirname(os.path.realpath(__file__))
+			filename = "{dir}/{filename}".format(dir=my_dir, filename=filename)
+			LOG.debug("Filename modified to: {filename}".format(filename=filename))
+
 		l = []
 		try:
 			with open(filename) as f:
