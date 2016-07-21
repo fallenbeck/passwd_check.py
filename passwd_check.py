@@ -448,7 +448,10 @@ class PasswordCheck:
 		Use the credentials and try to establish SSH connections to
 		the host.
 		"""
-		LOG.debug("Performing %d tests to establish a SSH connection" % (len(self.hosts) * len(self.users) * len(self.passwords)))
+		LOG.debug("         Number of hosts to test: {num}".format(num=len(self.hosts)))
+		LOG.debug("             Number of usernames: {num}".format(num=len(self.users)))
+		LOG.debug("             Number of passwords: {num}".format(num=len(self.passwords)))
+		LOG.debug("Total number of tests to conduct: {num}".format(num=len(self.hosts) * len(self.users) * len(self.passwords)))
 
 		# determine the needed size of the thread pool but keep the upper
 		# limit into consideration
