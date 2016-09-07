@@ -14,8 +14,6 @@ import argparse
 # use logging
 import logging
 log_formatter = logging.Formatter('%(asctime)s [%(levelname)7s] %(message)s')
-LOG = logging.getLogger(__name__)
-LOG.setLevel(logging.ERROR)
 
 # by default, paramiko should also generate logging ouput in case of a
 # critical error. in short, we do not want to see anything from paramiko
@@ -32,7 +30,7 @@ class PasswordCheck:
 	"""
 
 	# program version :-)
-	__version__ = "2.6"
+	__version__ = "2.7"
 
 	port = 22
 	connections = 0
@@ -75,8 +73,13 @@ class PasswordCheck:
 		# Check if there are any existing handlers
 		# Add only new logging handler if there is none
 		global LOG
-		if logger:
+		if logger is not None:
+			# we have an existing logger, let's use this one
 			LOG = logger
+		else:
+			# we need to initialize a new logger
+			LOG = logging.getLogger(__name__)
+			LOG.setLevel(logging.ERROR)
 
 		if not len(LOG.handlers):
 			stdout = logging.StreamHandler()
