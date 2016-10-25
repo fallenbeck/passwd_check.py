@@ -30,7 +30,7 @@ class PasswordCheck:
 	"""
 
 	# program version :-)
-	__version__ = "2.7"
+	__version__ = "2.8"
 
 	port = 22
 	connections = 0
@@ -499,7 +499,7 @@ class PasswordCheck:
 
 
 		LOG.debug("Waiting for tasks to complete")
-		results = concurrent.futures.wait(futures, timeout=3)
+		results = concurrent.futures.wait(futures, timeout=120)
 		LOG.debug("{} tasks completed".format(len(results.done)))
 
 		LOG.debug("Successful connections: %d\n%s" % (len(self.successful_connections), self.successful_connections))
