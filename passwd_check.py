@@ -30,7 +30,7 @@ class PasswordCheck:
 	"""
 
 	# program version :-)
-	__version__ = "2.8"
+	__version__ = "3.2"
 
 	port = 22
 	connections = 0
@@ -40,8 +40,11 @@ class PasswordCheck:
 	passwords = []
 	hosts = []
 
-	# Which credentials were used to connect
-	successful_connections = {}
+	# List of credentials that were successfully used to connect.
+	# It contains 4-tuples containing all information needed to track
+	# down the particular machines and credentials used:
+	# (host/address, port, username, password)
+	successful_connections = []
 
 	# Number of threads to use for connection tests
 	num_threads = 500
@@ -206,6 +209,7 @@ class PasswordCheck:
 		global LOG
 		LOG = logger
 
+
 	def set_verbosity(self, verbosity):
 		"""
 		Set the verbosity used for log output.
@@ -238,6 +242,7 @@ class PasswordCheck:
 
 		LOG.debug("Updated log levels to %s: %s, paramiko: %s" % (os.path.basename(argv[0]), logging.getLevelName(LOG.level), logging.getLevelName(logging.getLogger("paramiko").level)))
 
+
 	def set_max_threads(self, max_threads):
 		"""
 		Set the maximum number of threads to be used to perform the security
@@ -259,6 +264,7 @@ class PasswordCheck:
 
 		LOG.debug("Set maximum number of workers to %d" % (max_threads))
 
+
 	def set_cli_mode(self, started_from_cli):
 		"""
 		Set the CLI mode. It should be set to True if this program has been
@@ -273,6 +279,7 @@ class PasswordCheck:
 		self.cli_mode = started_from_cli
 		if started_from_cli:
 			self.set_exit_mode(True)
+
 
 	def set_exit_mode(self, exit_when_finished):
 		"""
@@ -328,6 +335,7 @@ class PasswordCheck:
 		LOG.debug("Loaded {} usernames from file {}".format(len(usernames), filename))
 		self.users = usernames
 
+
 	def load_passwords_from_file(self, filename):
 		"""
 		Load a list of passwords from a file that should be used during testing.
@@ -335,6 +343,7 @@ class PasswordCheck:
 		passwords = self._read_list_from_file(filename)
 		LOG.debug("Loaded {} passwords from file {}".format(len(passwords), filename))
 		self.passwords = passwords
+
 
 	def load_hosts_from_file(self, filename):
 		"""
@@ -344,6 +353,7 @@ class PasswordCheck:
 		LOG.debug("Loaded {} hosts/addresses from file {}".format(len(hosts), filename))
 		self.hosts = hosts
 
+
 	def set_hosts_to_scan(self, list_of_ips):
 		"""
 		Set a list of hosts/ips to be scanned.
@@ -351,13 +361,15 @@ class PasswordCheck:
 		LOG.debug("Set {} hosts/addresses to scan".format(len(list_of_ips)))
 		self.hosts = list_of_ips
 
+
 	def get_successful_connections(self):
 		"""
-		Returns the dict of successful connections:
-			host:port -> username:password
+		Returns the list of successful connections containing 4-tuples:
+		(host, port, username, password)
 		"""
-		LOG.debug("Return dict with {} successful connections".format(len(self.successful_connections)))
+		LOG.debug("Return list with {} successful connections".format(len(self.successful_connections)))
 		return self.successful_connections
+
 
 	# Helper functions
 	def _read_list_from_file(self, filename):
@@ -396,21 +408,31 @@ class PasswordCheck:
 		return l
 
 
-
 	# Testing
-	def run_tests(self):
+	def run_tests(self, list_of_tuples_to_check = None):
 		"""
 		Perform tests and exit the program with a return code of 0 if
 		everything went well or return code of 1 if connections could be
 		established.
 		It will exit with >=1 if a connection could be established (== bad)
 		If will exit with 0 if no connection could be esablished (== good)
+
+		:param list_of_tuples_to_check: Usually set to None, then the
+			class-wide settings were used that have been loaded from the
+			files.
+			If you want to test individual test (i.e. validate that tuples
+			that have been found during an earlier run are still working) you
+			can provide a list of 4-tuples here containing
+			(host, port, username, password)
 		"""
-		LOG.info("Running %d tests..." % (len(self.hosts) * len(self.users) * len(self.passwords)))
+		if not list_of_tuples_to_check:
+			LOG.info("Running %d tests..." % (len(self.hosts) * len(self.users) * len(self.passwords)))
+		else:
+			LOG.info("Got list of {} tuples to (re)check".format(len(list_of_tuples_to_check)))
 
 		# run the connection tests and evaluate
 		# using a certain number of threads
-		self.try_to_connect()
+		self.try_to_connect(list_of_tuples_to_check)
 
 		# exit the program with a particular exit code
 		# If a connection could be established, exit code should be > 0 (bad)
@@ -418,7 +440,7 @@ class PasswordCheck:
 		return self.evaluate(len(self.successful_connections))
 
 
-	def evaluate(self, code, max_code = 255):
+	def evaluate(self, code, max_code = 127):
 		"""
 		This method is used to handle the return code. A return code of 0
 		means that everything went well while a code != 0 points to either
@@ -428,11 +450,12 @@ class PasswordCheck:
 		the code is returned by this function.
 
 		code -- exit code you want to return or quit with
-		max_code -- maximum exit code
+		max_code -- maximum exit code (maximum is 127 or less)
 		"""
-		LOG.debug("Evaluate the code %d (max_code = %d)" % (code, max_code))
-		# set the maximum return code
-		retval = min(max_code, code)
+		# set the maximum return code with a maximum of 127
+		retval = min(127, max_code, code)
+
+		LOG.debug("Evaluate the code %d (max_code = %d)" % (code, min(127, max_code)))
 
 		LOG.debug("Return value set to %d" % (retval))
 		LOG.debug("Will exit? %r" % (self.exit_when_finished))
@@ -446,66 +469,93 @@ class PasswordCheck:
 
 
 	# iterate the credentials and try to establish SSH connections
-	def try_to_connect(self):
+	def try_to_connect(self, list_of_tuples_to_check = None):
 		"""
 		Use the credentials and try to establish SSH connections to
 		the host.
+
+		:param list_of_tuples_to_check: Usually set to None, then the
+			class-wide settings were used that have been loaded from the
+			files.
+			If you want to test individual test (i.e. validate that tuples
+			that have been found during an earlier run are still working) you
+			can provide a list of 4-tuples here containing
+			(host, port, username, password)
 		"""
-		LOG.debug("         Number of hosts to test: {num}".format(num=len(self.hosts)))
-		LOG.debug("             Number of usernames: {num}".format(num=len(self.users)))
-		LOG.debug("             Number of passwords: {num}".format(num=len(self.passwords)))
-		LOG.debug("Total number of tests to conduct: {num}".format(num=len(self.hosts) * len(self.users) * len(self.passwords)))
+		if not list_of_tuples_to_check:
+			LOG.debug("         Number of hosts to test: {num}".format(num=len(self.hosts)))
+			LOG.debug("             Number of usernames: {num}".format(num=len(self.users)))
+			LOG.debug("             Number of passwords: {num}".format(num=len(self.passwords)))
+			LOG.debug("Total number of tests to conduct: {num}".format(num=len(self.hosts) * len(self.users) * len(self.passwords)))
+		else:
+			LOG.debug("Got list of {} tuples to check".format(len(list_of_tuples_to_check)))
+
 
 		# determine the needed size of the thread pool but keep the upper
 		# limit into consideration
 		num_workers = 0
-		if self.num_threads > 0:
-			num_workers = min(self.num_threads, len(self.hosts) * len(self.users) * len(self.passwords))
-		else:
+		if not list_of_tuples_to_check:
 			num_workers = len(self.hosts) * len(self.users) * len(self.passwords)
+		else:
+			num_workers = len(list_of_tuples_to_check)
+
+		# if an upper thread limit is specified, we need to apply it
+		if self.num_threads > 0:
+			num_workers = min(self.num_threads, num_workers)
 
 		LOG.debug("Initializing empty list for successful connections")
-		self.successful_connections = {}
+		# Initialize list of successful connections
+		self.successful_connections = None
+		self.successful_connections = []
 		LOG.debug("Length of list: {}".format(len(self.successful_connections)))
 
-		LOG.debug("Initializing worker pool")
+		LOG.debug("Initializing worker pool with {} workers".format(num_workers))
 		self._create_worker_pool(num_workers)
 
-		LOG.debug("Using pool with %d workers" % (num_workers))
+		# init crucial values
+		futures = None
+		results = None
 
 		futures = []
-
 		if self.pool is not None:
-			for hostline in self.hosts:
-				hostline = hostline.strip()
-				try:
-					host, port = hostline.split(":", 1)
-				except:
-					host = hostline
-					port = 22
+			if not list_of_tuples_to_check:
+				for hostline in self.hosts:
+					hostline = hostline.strip()
+					try:
+						host, port = hostline.split(":", 1)
+					except:
+						host = hostline
+						port = 22
+	
+					try:
+						port = int(port)
+					except:
+						port = 22
+	
+					for user in self.users:
+						for passwd in self.passwords:
+							# submit the job to the ThreadPoolExecutor
+							a = self.pool.submit(self.ssh_connect, user, passwd, host, port)
 
-				try:
-					port = int(port)
-				except:
-					port = 22
+			else:
+				for host, port, username, password in list_of_tuples_to_check:
+					LOG.debug("Testing tuple {}:{}@{}:{}".format(username, password, host, port))
+					a = self.pool.submit(self.ssh_connect, username, password, host, port)
 
-				for user in self.users:
-					for passwd in self.passwords:
-						# submit the job to the ThreadPoolExecutor
-						a = self.pool.submit(self.ssh_connect, user, passwd, host, port)
-						futures.append(a)
+			# add the task to the futures list
+			futures.append(a)
+			
 		else:
 			LOG.error("Worker pool not initialized. Skipping ...")
 
-
 		LOG.debug("Waiting for tasks to complete")
 		results = concurrent.futures.wait(futures, timeout=120)
-		LOG.debug("{} tasks completed".format(len(results.done)))
+		LOG.debug("{} tasks completed: {}".format(len(results.done), results))
 
 		LOG.debug("Successful connections: %d\n%s" % (len(self.successful_connections), self.successful_connections))
 
 
-	def ssh_connect(self, user, passwd, host = "localhost", port = 22):
+	def ssh_connect(self, user, passwd, host = "localhost", port = 22, cmd = "uname -a"):
 		"""
 		Try to establish a single SSH connection to host:port
 		using the provided user and passwd.
@@ -515,22 +565,45 @@ class PasswordCheck:
 		host -- host to connect to
 		port -- port to connect to
 		"""
-		LOG.debug("Trying to connect %s@%s:%d ..." % (user, host, port))
+		# LOG.warn("Trying to connect: {u}@{h}:{n}".format(u=user, h=host, n=port))
+		LOG.debug("Trying to connect: {u}:{p}@{h}:{n}".format(u=user, p=passwd, h=host, n=port))
 		# Create paramiko ssh client
 		ssh = paramiko.SSHClient()
 		# Accept unknown host keys
 		ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
 		try:
 			# try to connect to the host
 			# documenation to configuration options can be found on the
 			# paramiko web page:
 			# http://docs.paramiko.org/en/1.16/api/client.html
+			#
+			# hostname (str) – the server to connect to
+			# port (int) – the server port to connect to
+			# username (str) – the username to authenticate as (defaults to the current local username)
+			# password (str) – Used for password authentication; is also used for private key decryption if passphrase is not given.
+			# passphrase (str) – Used for decrypting private keys.
+			# pkey (PKey) – an optional private key to use for authentication
+			# key_filename (str) – the filename, or list of filenames, of optional private key(s) and/or certs to try for authentication
+			# timeout (float) – an optional timeout (in seconds) for the TCP connect
+			# allow_agent (bool) – set to False to disable connecting to the SSH agent
+			# look_for_keys (bool) – set to False to disable searching for discoverable private key files in ~/.ssh/
+			# compress (bool) – set to True to turn on compression
+			# sock (socket) – an open socket or socket-like object (such as a Channel) to use for communication to the target host
+			# gss_auth (bool) – True if you want to use GSS-API authentication
+			# gss_kex (bool) – Perform GSS-API Key Exchange and user authentication
+			# gss_deleg_creds (bool) – Delegate GSS-API client credentials or not
+			# gss_host (str) – The targets name in the kerberos database. default: hostname
+			# gss_trust_dns (bool) – Indicates whether or not the DNS is trusted to securely canonicalize the name of the host being connected to (default True).
+			# banner_timeout (float) – an optional timeout (in seconds) to wait for the SSH banner to be presented.
+			# auth_timeout (float) – an optional timeout (in seconds) to wait for an authentication response.
+
 			ssh.connect(
 				hostname = host,
-				port = port,
+				port = int(port),
 				username = user,
 				password = passwd,
-				timeout = 1,
+				timeout = 30,
 				allow_agent = False,
 				look_for_keys = False,
 				compress = False,
@@ -539,16 +612,28 @@ class PasswordCheck:
 				gss_kex = False,
 				gss_deleg_creds = False,
 				gss_host = None,
-				banner_timeout = 0
+				banner_timeout = 30,
+				# auth_timeout = 30, # our version does not support that
 			)
 
+			if cmd is not None:
+				stdin, stdout, stderr = ssh.exec_command(cmd)
+				retval = stdout.channel.recv_exit_status()
+				LOG.debug("Command: {}".format(cmd))
+				LOG.debug(" retval: {}".format(retval))
+				LOG.debug(" stdout: {}".format(stdout.readlines()))
+				LOG.debug(" stderr: {}".format(stderr.readlines()))
+
 			# Add credentials which could be successfully used to connect
-			self.successful_connections["%s:%d" % (host, port)] = "%s:%s" % (user, passwd)
+			t = (host, port, user, passwd)
+			self.successful_connections.append(t)
 			LOG.warning("Connection established to %s:%d as %s" % (host, port, user))
 			LOG.debug("Connection established to %s:%d as %s:%s" % (host, port, user, passwd))
 
 		except Exception as e:
-			LOG.debug("Could not establish connection")
+			# LOG.debug("Could not establish connection")
+			LOG.debug("Could not establish connection {u}:{p}@{h}:{n}: {e}".format(u=user, p=passwd, h=host, n=port, e=e))
+			pass
 
 		# Connection could be established.
 		# Close the SSH connection in any case to prevent program hangs
